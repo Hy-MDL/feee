@@ -199,57 +199,50 @@ export default function DateSimulator({ onSnapshotChange }: DateSimulatorProps) 
   }, [currentSnapshot]);
 
   return (
-    <div className="space-y-4">
-      {/* Main Card */}
-      <Card className="bg-background-primary border-2 border-accent-emerald/30">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-accent-emerald/10 flex items-center justify-center">
-              <Calendar size={20} className="text-accent-emerald" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-text-primary">Date-Based Simulation</h3>
-              <p className="text-xs text-text-tertiary">
-                {snapshots.length} periods · Real-time economic evolution
-              </p>
-            </div>
+    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+      {/* Main Card - Compact */}
+      <Card className="bg-background-primary border border-accent-emerald/30 p-3">
+        {/* Header - Compact */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-accent-emerald" />
+            <h3 className="text-xs font-semibold text-text-primary">Date Simulation</h3>
           </div>
-
-          <Button variant="secondary" size="sm" onClick={runSimulation}>
-            <RotateCcw size={14} className="mr-1" />
+          <button
+            onClick={runSimulation}
+            className="text-xs px-2 py-1 bg-background-secondary hover:bg-background-tertiary rounded transition-colors text-text-secondary"
+          >
             Re-run
-          </Button>
+          </button>
         </div>
 
-        {/* Current Date Display */}
+        {/* Current Date Display - Compact */}
         {currentSnapshot && (
-          <div className="bg-background-secondary rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-background-secondary rounded p-2 mb-2">
+            <div className="flex items-center justify-between mb-1">
               <div>
-                <div className="text-xs text-text-tertiary mb-1">Current Date</div>
-                <div className="text-3xl font-bold text-accent-emerald font-mono">
+                <div className="text-[10px] text-text-tertiary">Date</div>
+                <div className="text-lg font-bold text-accent-emerald font-mono">
                   {currentSnapshot.date.toLocaleDateString('en-US', {
-                    year: 'numeric',
                     month: 'short',
                     day: 'numeric',
+                    year: '2-digit',
                   })}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-text-tertiary mb-1">Period</div>
-                <div className="text-xl font-bold text-text-primary">
-                  {currentIndex + 1} / {snapshots.length}
+                <div className="text-[10px] text-text-tertiary">Period</div>
+                <div className="text-sm font-semibold text-text-primary">
+                  {currentIndex + 1}/{snapshots.length}
                 </div>
               </div>
             </div>
-            <div className="text-xs text-text-secondary">{currentSnapshot.description}</div>
           </div>
         )}
 
-        {/* Timeline Slider */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
+        {/* Timeline Slider - Compact */}
+        <div className="mb-2">
+          <div className="flex items-center gap-1 mb-1">
             <span className="text-xs text-text-tertiary font-mono">
               {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
@@ -284,56 +277,56 @@ export default function DateSimulator({ onSnapshotChange }: DateSimulatorProps) 
           </div>
         </div>
 
-        {/* Playback Controls */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+        {/* Playback Controls - Compact */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={resetSimulation}
-              className="w-8 h-8 rounded bg-background-secondary hover:bg-background-tertiary transition-colors flex items-center justify-center text-text-secondary hover:text-text-primary"
+              className="w-6 h-6 rounded bg-background-secondary hover:bg-background-tertiary transition-colors flex items-center justify-center text-text-secondary hover:text-text-primary"
               title="Reset"
             >
-              <RotateCcw size={16} />
+              <RotateCcw size={12} />
             </button>
 
             <button
               onClick={stepBackward}
               disabled={currentIndex === 0}
-              className="w-8 h-8 rounded bg-background-secondary hover:bg-background-tertiary transition-colors flex items-center justify-center text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Previous Period"
+              className="w-6 h-6 rounded bg-background-secondary hover:bg-background-tertiary transition-colors flex items-center justify-center text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Previous"
             >
-              <Rewind size={16} />
+              <Rewind size={12} />
             </button>
 
             <button
               onClick={togglePlayback}
-              className="w-10 h-10 rounded-full bg-accent-emerald hover:bg-accent-emerald/80 transition-colors flex items-center justify-center text-black font-bold"
+              className="w-8 h-8 rounded-full bg-accent-emerald hover:bg-accent-emerald/80 transition-colors flex items-center justify-center text-black font-bold"
               title={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
             </button>
 
             <button
               onClick={stepForward}
               disabled={currentIndex === snapshots.length - 1}
-              className="w-8 h-8 rounded bg-background-secondary hover:bg-background-tertiary transition-colors flex items-center justify-center text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Next Period"
+              className="w-6 h-6 rounded bg-background-secondary hover:bg-background-tertiary transition-colors flex items-center justify-center text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Next"
             >
-              <FastForward size={16} />
+              <FastForward size={12} />
             </button>
           </div>
 
-          {/* Playback Speed */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-tertiary">Speed:</span>
-            <div className="flex gap-1">
+          {/* Playback Speed - Compact */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-text-tertiary">Speed:</span>
+            <div className="flex gap-0.5">
               {[0.5, 1.0, 2.0, 5.0].map((speed) => (
                 <button
                   key={speed}
                   onClick={() => setPlaybackSpeed(speed)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all ${
                     playbackSpeed === speed
                       ? 'bg-accent-emerald text-black'
-                      : 'bg-background-secondary text-text-secondary hover:text-text-primary'
+                      : 'bg-background-secondary text-text-tertiary hover:text-text-primary'
                   }`}
                 >
                   {speed}x
@@ -343,25 +336,16 @@ export default function DateSimulator({ onSnapshotChange }: DateSimulatorProps) 
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-background-secondary rounded-lg p-3">
-            <div className="text-xs text-text-tertiary mb-1">Interval</div>
-            <div className="text-lg font-bold text-accent-cyan">{intervalDays} days</div>
-          </div>
-          <div className="bg-background-secondary rounded-lg p-3">
-            <div className="text-xs text-text-tertiary mb-1">Events</div>
-            <div className="text-lg font-bold text-accent-magenta">{recentEvents.length}</div>
-          </div>
-          <div className="bg-background-secondary rounded-lg p-3">
-            <div className="text-xs text-text-tertiary mb-1">Volatility</div>
-            <div className="text-lg font-bold text-accent-emerald">15%</div>
-          </div>
+        {/* Stats - Inline Compact */}
+        <div className="flex items-center justify-between text-[10px] text-text-tertiary px-1">
+          <span>Interval: <span className="text-accent-cyan font-semibold">{intervalDays}d</span></span>
+          <span>Events: <span className="text-accent-magenta font-semibold">{recentEvents.length}</span></span>
+          <span>Volatility: <span className="text-accent-emerald font-semibold">15%</span></span>
         </div>
       </Card>
 
-      {/* Events & Growing Entities */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Events & Growing Entities - Hidden for compact view */}
+      <div className="grid grid-cols-2 gap-2 hidden">
         {/* Events */}
         {recentEvents.length > 0 && (
           <Card className="bg-background-secondary">
