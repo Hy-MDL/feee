@@ -337,9 +337,7 @@ function evolveMacroState(
   newState.us_cpi_inflation = Math.max(0, Math.min(10, newState.us_cpi_inflation));
 
   // 8. M2 변화 → 자산 가격 영향
-  // M2 증가 → 자산 가격 상승 (liquidit
-
-y)
+  // M2 증가 → 자산 가격 상승 (liquidity)
   // 이는 stock prices, real estate 등에 영향을 미침
   const assetPriceImpact = m2Change * 0.5 - fedRateChange * 0.3;
 
