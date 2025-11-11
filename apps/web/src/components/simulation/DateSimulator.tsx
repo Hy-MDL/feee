@@ -73,16 +73,31 @@ export default function DateSimulator({ onSnapshotChange }: DateSimulatorProps) 
     runSimulation();
   }, []); // 최초 1회만
 
-  // 재생 루프
+  // Smooth animation state
+  const [interpolationProgress, setInterpolationProgress] = useState(0);
+  const animationStartTime = useRef<number>(0);
+
+  // 재생 루프 (smooth interpolation)
   useEffect(() => {
     if (!isPlaying || snapshots.length === 0) return;
 
     const animate = () => {
       const now = Date.now();
-      const deltaTime = now - lastUpdateRef.current;
 
-      // playbackSpeed에 따라 진행 (1.0 = 1초당 1 스냅샷)
-      if (deltaTime >= 1000 / playbackSpeed) {
+      if (animationStartTime.current === 0) {
+        animationStartTime.current = now;
+      }
+
+      // Calculate progress for smooth interpolation
+      const elapsed = now - animationStartTime.current;
+      const duration = (1000 / playbackSpeed); // Duration for one transition
+      const progress = Math.min(elapsed / duration, 1);
+
+      setInterpolationProgress(progress);
+
+      // Interpolate between current and next snapshot
+      if (progress >= 1) {
+        // Move to next snapshot
         setCurrentIndex((prev) => {
           const next = prev + 1;
           if (next >= snapshots.length) {
@@ -90,6 +105,7 @@ export default function DateSimulator({ onSnapshotChange }: DateSimulatorProps) 
             return prev;
           }
 
+          // Send the next snapshot (not interpolated)
           if (onSnapshotChange) {
             onSnapshotChange(snapshots[next]);
           }
@@ -97,7 +113,16 @@ export default function DateSimulator({ onSnapshotChange }: DateSimulatorProps) 
           return next;
         });
 
-        lastUpdateRef.current = now;
+        animationStartTime.current = 0;
+        setInterpolationProgress(0);
+      } else if (onSnapshotChange && currentIndex < snapshots.length - 1) {
+        // Send interpolated snapshot
+        const interpolated = interpolateSnapshots(
+          snapshots[currentIndex],
+          snapshots[currentIndex + 1],
+          progress
+        );
+        onSnapshotChange(interpolated);
       }
 
       animationFrameRef.current = requestAnimationFrame(animate);
@@ -110,7 +135,7 @@ export default function DateSimulator({ onSnapshotChange }: DateSimulatorProps) 
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isPlaying, playbackSpeed, snapshots, onSnapshotChange]);
+  }, [isPlaying, playbackSpeed, snapshots, currentIndex, onSnapshotChange]);
 
   // 재생/일시정지
   const togglePlayback = () => {

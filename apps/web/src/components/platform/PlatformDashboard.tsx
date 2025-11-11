@@ -13,6 +13,7 @@ import Watchlist from '../finance/Watchlist';
 import PriceAlertModal from '../finance/PriceAlertModal';
 import MacroControlPanel from '../macro/MacroControlPanel';
 import CircuitDiagram from '../macro/CircuitDiagram';
+import ScenarioMarket from './ScenarioMarket';
 import {
   MACRO_VARIABLES,
   MACRO_CATEGORIES,
@@ -746,6 +747,15 @@ export default function PlatformDashboard() {
                 />
               </div>
             </Card>
+          </div>
+
+          {/* Scenario Market - Community Voting */}
+          <div className="h-[500px] max-h-[500px] flex-shrink-0">
+            <ScenarioMarket
+              onScenarioSelect={(scenario) => {
+                console.log('Selected scenario:', scenario.name);
+              }}
+            />
           </div>
 
           {/* Fundamental & Technical & Analysis Report Tabs (Supplementary) - Remaining space */}
