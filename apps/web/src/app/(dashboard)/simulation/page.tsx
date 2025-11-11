@@ -14,6 +14,13 @@ import CascadeEffects from '@/components/simulation/CascadeEffects';
 import SimulationTimeline from '@/components/simulation/SimulationTimeline';
 import DateSimulator from '@/components/simulation/DateSimulator';
 import { DateSnapshot } from '@/lib/utils/dateBasedSimulation';
+import {
+  FED_RATE_THEME,
+  AI_BOOM_THEME,
+  TRADE_WAR_THEME,
+  M2_LIQUIDITY_THEME,
+} from '@/data/supplyChainThemes';
+import ScenarioMarket from '@/components/platform/ScenarioMarket';
 
 // Dynamic imports
 const Globe3D = dynamic(() => import('@/components/visualization/Globe3D'), { ssr: false });
@@ -99,6 +106,7 @@ export default function SimulationPage() {
   const [selectedSector, setSelectedSector] = useState<Sector>(null);
   const [viewMode, setViewMode] = useState<'split' | 'globe' | 'network' | 'supply-chain'>('split');
   const [globeViewMode, setGlobeViewMode] = useState<'companies' | 'flows' | 'm2'>('companies');
+  const [supplyChainTheme, setSupplyChainTheme] = useState<'fed_rate' | 'ai_boom' | 'trade_war' | 'm2'>('ai_boom');
   const [showElementLibrary, setShowElementLibrary] = useState(false);
   const [showScenarios, setShowScenarios] = useState(true); // Open by default
   const [showAdvancedControls, setShowAdvancedControls] = useState(false);
@@ -759,11 +767,65 @@ export default function SimulationPage() {
           {viewMode === 'supply-chain' && (
             <div className="h-full relative overflow-auto p-6">
               <div className="max-w-7xl mx-auto">
+                {/* Supply Chain Theme Selector */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-text-primary">Supply Chain Analysis</h2>
+                    <div className="flex gap-2">
+                      {[
+                        { id: 'ai_boom', theme: AI_BOOM_THEME, icon: '🤖' },
+                        { id: 'fed_rate', theme: FED_RATE_THEME, icon: '🏦' },
+                        { id: 'trade_war', theme: TRADE_WAR_THEME, icon: '🌐' },
+                        { id: 'm2', theme: M2_LIQUIDITY_THEME, icon: '💰' },
+                      ].map(({ id, theme, icon }) => (
+                        <button
+                          key={id}
+                          onClick={() => setSupplyChainTheme(id as any)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 ${
+                            supplyChainTheme === id
+                              ? 'bg-accent-cyan text-black border-accent-cyan shadow-lg shadow-accent-cyan/50'
+                              : 'bg-background-secondary text-text-secondary border-border-primary hover:border-accent-cyan/50 hover:text-text-primary'
+                          }`}
+                        >
+                          <span className="mr-2">{icon}</span>
+                          {theme.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-text-secondary">
+                    {supplyChainTheme === 'ai_boom' && AI_BOOM_THEME.description}
+                    {supplyChainTheme === 'fed_rate' && FED_RATE_THEME.description}
+                    {supplyChainTheme === 'trade_war' && TRADE_WAR_THEME.description}
+                    {supplyChainTheme === 'm2' && M2_LIQUIDITY_THEME.description}
+                  </p>
+                </div>
+
                 <SupplyChainDiagram
-                  nodes={HBM_SUPPLY_CHAIN.nodes}
-                  links={HBM_SUPPLY_CHAIN.links}
-                  title="NVIDIA H100 Supply Chain Analysis"
-                  description="Critical path analysis of AI accelerator manufacturing dependencies - Click nodes to explore relationships"
+                  nodes={
+                    supplyChainTheme === 'ai_boom' ? AI_BOOM_THEME.nodes :
+                    supplyChainTheme === 'fed_rate' ? FED_RATE_THEME.nodes :
+                    supplyChainTheme === 'trade_war' ? TRADE_WAR_THEME.nodes :
+                    M2_LIQUIDITY_THEME.nodes
+                  }
+                  links={
+                    supplyChainTheme === 'ai_boom' ? AI_BOOM_THEME.connections :
+                    supplyChainTheme === 'fed_rate' ? FED_RATE_THEME.connections :
+                    supplyChainTheme === 'trade_war' ? TRADE_WAR_THEME.connections :
+                    M2_LIQUIDITY_THEME.connections
+                  }
+                  title={
+                    supplyChainTheme === 'ai_boom' ? AI_BOOM_THEME.name :
+                    supplyChainTheme === 'fed_rate' ? FED_RATE_THEME.name :
+                    supplyChainTheme === 'trade_war' ? TRADE_WAR_THEME.name :
+                    M2_LIQUIDITY_THEME.name
+                  }
+                  description={
+                    supplyChainTheme === 'ai_boom' ? AI_BOOM_THEME.description :
+                    supplyChainTheme === 'fed_rate' ? FED_RATE_THEME.description :
+                    supplyChainTheme === 'trade_war' ? TRADE_WAR_THEME.description :
+                    M2_LIQUIDITY_THEME.description
+                  }
                 />
 
                 {/* Timeline Simulation (Legacy) */}
@@ -1069,6 +1131,29 @@ export default function SimulationPage() {
                           )}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Community Scenario Market */}
+                  <div className="pt-3 border-t border-border-primary mt-3">
+                    <div className="text-xs font-semibold text-text-secondary mb-2 flex items-center gap-2">
+                      <Users size={14} className="text-accent-magenta" />
+                      Community Scenarios (Poly Market Style)
+                    </div>
+                    <div className="bg-background-tertiary rounded-lg p-2 border border-border-primary">
+                      <ScenarioMarket
+                        onScenarioSelect={(scenario) => {
+                          console.log('Community scenario selected:', scenario.name);
+                          // Apply community scenario
+                          setMacroChanging(true);
+                          Object.entries(scenario.macroState).forEach(([key, value]) => {
+                            updateMacroVariable(key, value);
+                          });
+                          setTimeout(() => {
+                            setMacroChanging(false);
+                          }, 1500);
+                        }}
+                      />
                     </div>
                   </div>
                 </div>

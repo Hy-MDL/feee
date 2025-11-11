@@ -282,26 +282,72 @@ function evolveEntity(
 }
 
 /**
- * 매크로 상태 진화
+ * 매크로 상태 진화 - CASCADE EFFECTS
+ *
+ * 금리 → 대출 → M2 → 자산가격 흐름을 시뮬레이션
  */
 function evolveMacroState(
   previous: MacroState,
   config: DateSimulationConfig
 ): MacroState {
-  // 매크로 변수들도 시간에 따라 조금씩 변화
   const newState = { ...previous };
 
-  // Fed rate: 천천히 변화
-  newState.fed_funds_rate += (Math.random() - 0.5) * 0.0005;
-  newState.fed_funds_rate = Math.max(0, Math.min(0.1, newState.fed_funds_rate));
+  // 1. Fed Rate 변화 (중앙은행 정책)
+  const fedRateChange = (Math.random() - 0.5) * 0.25; // ±0.25% 변화
+  newState.fed_funds_rate = previous.fed_funds_rate || 5.25;
+  newState.fed_funds_rate += fedRateChange;
+  newState.fed_funds_rate = Math.max(0, Math.min(10, newState.fed_funds_rate));
 
-  // GDP growth: 분기마다 변동
-  newState.us_gdp_growth += (Math.random() - 0.5) * 0.002;
-  newState.us_gdp_growth = Math.max(-0.05, Math.min(0.08, newState.us_gdp_growth));
+  // 2. 금리 변화 → 대출 영향
+  // 금리 상승 → 대출 감소, 금리 하락 → 대출 증가
+  const loanImpact = -fedRateChange * 0.5; // 금리 1% 상승 시 대출 0.5% 감소
 
-  // VIX: 변동성
-  newState.vix += (Math.random() - 0.5) * 2;
-  newState.vix = Math.max(10, Math.min(50, newState.vix));
+  // 3. 대출 변화 → M2 통화량 영향
+  // 대출이 늘면 통화 공급 증가 (신용 창출)
+  const m2 = newState.us_m2_money_supply || 21.4;
+  const m2Change = loanImpact * 0.3; // 대출 1% 증가 → M2 0.3% 증가
+  newState.us_m2_money_supply = Math.max(10, Math.min(40, m2 + m2Change));
+
+  // 4. 금리 & M2 → GDP 영향
+  // 금리 상승 & M2 감소 → GDP 하락
+  const gdpImpact = (loanImpact * 0.4) - (fedRateChange * 0.2);
+  newState.us_gdp_growth = previous.us_gdp_growth || 2.5;
+  newState.us_gdp_growth += gdpImpact;
+  newState.us_gdp_growth = Math.max(-5, Math.min(7, newState.us_gdp_growth));
+
+  // 5. 금리 → 10Y Treasury Yield 영향
+  // Fed Rate와 10Y Yield는 양의 상관관계
+  const yieldChange = fedRateChange * 0.6 + (Math.random() - 0.5) * 0.1;
+  newState.us_10y_yield = previous.us_10y_yield || 4.5;
+  newState.us_10y_yield += yieldChange;
+  newState.us_10y_yield = Math.max(0, Math.min(10, newState.us_10y_yield));
+
+  // 6. 경제 불확실성 → VIX
+  // GDP 하락, 금리 급변 → VIX 상승
+  const uncertaintyFactor = Math.abs(fedRateChange) * 2 + Math.abs(gdpImpact) * 3;
+  const vixChange = uncertaintyFactor * 5 + (Math.random() - 0.5) * 2;
+  newState.vix = previous.vix || 18.5;
+  newState.vix += vixChange;
+  newState.vix = Math.max(5, Math.min(80, newState.vix));
+
+  // 7. 통화량 & 경제 성장 → 인플레이션
+  const inflationImpact = (m2Change * 0.3) + (gdpImpact * 0.2);
+  newState.us_cpi_inflation = previous.us_cpi_inflation || 3.5;
+  newState.us_cpi_inflation += inflationImpact;
+  newState.us_cpi_inflation = Math.max(0, Math.min(10, newState.us_cpi_inflation));
+
+  // 8. M2 변화 → 자산 가격 영향
+  // M2 증가 → 자산 가격 상승 (liquidit
+
+y)
+  // 이는 stock prices, real estate 등에 영향을 미침
+  const assetPriceImpact = m2Change * 0.5 - fedRateChange * 0.3;
+
+  // Oil은 수요(GDP)와 달러 가치(M2)에 영향
+  newState.wti_oil = previous.wti_oil || 85;
+  const oilChange = gdpImpact * 2 + assetPriceImpact * 0.5 + (Math.random() - 0.5) * 5;
+  newState.wti_oil += oilChange;
+  newState.wti_oil = Math.max(20, Math.min(200, newState.wti_oil));
 
   return newState;
 }

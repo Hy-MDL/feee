@@ -33,13 +33,40 @@ function Header() {
                       Dashboard
                     </a>
                     <a
-                      href="/ceo-dashboard"
+                      href="/simulation"
                       className={cn(
-                        pathname === '/ceo-dashboard' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                        pathname === '/simulation' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
                         'rounded-md px-3 py-2 text-sm font-medium'
                       )}
                     >
-                      CEO Dashboard
+                      SimLab
+                    </a>
+                    <a
+                      href="/financial-tools"
+                      className={cn(
+                        pathname === '/financial-tools' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                        'rounded-md px-3 py-2 text-sm font-medium'
+                      )}
+                    >
+                      Financial Tools
+                    </a>
+                    <a
+                      href="/supply-chain"
+                      className={cn(
+                        pathname === '/supply-chain' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                        'rounded-md px-3 py-2 text-sm font-medium'
+                      )}
+                    >
+                      Supply Chain
+                    </a>
+                    <a
+                      href="/ownership"
+                      className={cn(
+                        pathname === '/ownership' ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                        'rounded-md px-3 py-2 text-sm font-medium'
+                      )}
+                    >
+                      Ownership
                     </a>
                   </div>
                 </div>
