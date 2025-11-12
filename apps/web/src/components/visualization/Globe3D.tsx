@@ -257,102 +257,42 @@ export default function Globe3D({
     return impacts;
   }, [macroState]);
 
-  // 🔧 OPTIMIZED: Create stable point objects (prevent re-rendering/"popping")
-  // Only regenerate when companies or filters change, NOT when impacts change
-  const companyPointsBase = useMemo(() => {
+  // 🔧 STABLE: Base point data - NEVER regenerate unless company list changes
+  // This prevents "popping" - only create new objects when filter changes
+  const stableCompanyPoints = useMemo(() => {
     return companies
       .filter(c => c.location) // Only companies with location data
       .map(company => {
         const companyEntityId = `company-${company.ticker?.toLowerCase() || company.name.toLowerCase().replace(/\s+/g, '-')}`;
 
         return {
-          id: companyEntityId, // 🔑 CRITICAL: Stable ID prevents point re-rendering
+          id: companyEntityId, // 🔑 CRITICAL: Stable ID
           lat: company.location!.lat,
           lng: company.location!.lng,
           name: company.name_en || company.name,
           ticker: company.ticker,
           sector: company.sector,
-          company: company, // Store full company data for dynamic calculations
+          company: company,
+          type: 'company' // Marker for differentiation
         };
       });
-  }, [selectedSector, selectedTopic]); // 🔧 ONLY depend on filters, NOT impacts
+  }, []); // 🔧 EMPTY dependencies - only create once!
 
-  // Separate memoized calculation for visual properties
+  // 🔍 Filtered points based on current filters
   const companyPoints = useMemo(() => {
-    return companyPointsBase.map(point => {
+    return stableCompanyPoints.filter(point => {
       const company = point.company;
 
-      const sectorImpact =
-        company.sector === 'BANKING' ? calculatedImpacts.banking :
-        company.sector === 'REALESTATE' ? calculatedImpacts.realEstate :
-        company.sector === 'MANUFACTURING' ? calculatedImpacts.manufacturing :
-        company.sector === 'SEMICONDUCTOR' ? calculatedImpacts.semiconductor :
-        company.sector === 'CRYPTO' ? calculatedImpacts.crypto :
-        0;
-
-      // 🔍 Check sector relevance
+      // Check sector relevance
       const isSectorRelevant = !selectedSector || company.sector === selectedSector;
 
-      // 🔍 Check topic relevance
+      // Check topic relevance
       const isTopicRelevant = !selectedTopic || selectedTopic === 'all' ||
         (company.topics && company.topics.includes(selectedTopic));
 
-      // 🔍 Overall relevance: must match both filters (if active)
-      const isRelevant = isSectorRelevant && isTopicRelevant;
-
-      // Get level-specific impact for this company
-      const levelImpact = getEntityImpact(point.id);
-
-      // Combine macro sector impact with level-specific impact
-      const totalImpact = sectorImpact + (levelImpact?.impactPercentage || 0);
-
-      // Adjust size based on level impact (if any)
-      const baseSize = Math.log(company.financials.revenue + 1) * 0.3;
-      const adjustedSize = levelImpact
-        ? baseSize * getImpactSizeMultiplier(levelImpact.impactScore)
-        : baseSize;
-
-      // 🔍 Use impact color if level impact exists, otherwise:
-      // - Full color for relevant companies
-      // - Dimmed gray for filtered-out companies
-      let pointColor = levelImpact && Math.abs(levelImpact.impactScore) > 0.05
-        ? getImpactColor(levelImpact.impactScore)
-        : isRelevant ? getSectorColor(company.sector) : 'rgba(100, 100, 100, 0.2)';
-
-      let finalSize = adjustedSize;
-
-      // Check if entity is affected by recent events
-      let isAffected = false;
-      let affectedByEvent: any = null;
-
-      // Override with snapshot data if available
-      if (snapshot) {
-        const snapshotEntity = snapshot.entityValues.get(point.id);
-        if (snapshotEntity) {
-          finalSize = snapshotEntity.size * baseSize; // Use snapshot size
-          pointColor = snapshotEntity.color; // Use snapshot color
-        }
-
-        // Check if this entity is in any recent events
-        snapshot.events.forEach(event => {
-          if (event.affectedEntities.includes(point.id)) {
-            isAffected = true;
-            affectedByEvent = event;
-          }
-        });
-      }
-
-      return {
-        ...point, // 🔧 Spread stable base properties
-        size: finalSize,
-        color: pointColor,
-        impact: totalImpact,
-        levelImpact: levelImpact,
-        isAffected,
-        affectedByEvent,
-      };
+      return isSectorRelevant && isTopicRelevant;
     });
-  }, [companyPointsBase, selectedSector, selectedTopic, calculatedImpacts, entityImpacts, getEntityImpact, snapshot]);
+  }, [stableCompanyPoints, selectedSector, selectedTopic]); // Only filter when filters change
 
   // Helper to get RGB values from sector color (must come before dynamicImpactArcs)
   const getSectorRGB = (sector: string): string => {
@@ -1033,13 +973,87 @@ export default function Globe3D({
         pointId="id" // CRITICAL: Use stable ID for point persistence
         pointLat="lat"
         pointLng="lng"
-        pointAltitude={(d: any) => d.size * 0.01}
+        pointAltitude={(d: any) => {
+          const isCountry = d.type === 'country' || d.code;
+          if (isCountry) return d.size * 0.01;
+
+          // 🔥 DYNAMIC: Calculate company size in real-time
+          const company = d.company;
+          if (!company) return 0.3;
+
+          const levelImpact = getEntityImpact(d.id);
+          const baseSize = Math.log(company.financials.revenue + 1) * 0.3;
+          let finalSize = levelImpact
+            ? baseSize * getImpactSizeMultiplier(levelImpact.impactScore)
+            : baseSize;
+
+          // Override with snapshot data if available
+          if (snapshot) {
+            const snapshotEntity = snapshot.entityValues.get(d.id);
+            if (snapshotEntity) {
+              finalSize = snapshotEntity.size * baseSize;
+            }
+          }
+
+          return finalSize * 0.01;
+        }}
         pointRadius={(d: any) => {
           // Differentiate between companies (smaller) and countries (larger)
-          const isCountry = d.type === 'country' || d.code; // Has type or country code
-          return isCountry ? d.size * 0.5 : d.size * 0.4;
+          const isCountry = d.type === 'country' || d.code;
+
+          if (isCountry) return d.size * 0.5;
+
+          // 🔥 DYNAMIC: Calculate company radius in real-time
+          const company = d.company;
+          if (!company) return 0.4;
+
+          const levelImpact = getEntityImpact(d.id);
+          const baseSize = Math.log(company.financials.revenue + 1) * 0.3;
+          let finalSize = levelImpact
+            ? baseSize * getImpactSizeMultiplier(levelImpact.impactScore)
+            : baseSize;
+
+          // Override with snapshot data
+          if (snapshot) {
+            const snapshotEntity = snapshot.entityValues.get(d.id);
+            if (snapshotEntity) {
+              finalSize = snapshotEntity.size * baseSize;
+            }
+          }
+
+          return finalSize * 0.4;
         }}
-        pointColor={(d: any) => d.color}
+        pointColor={(d: any) => {
+          const isCountry = d.type === 'country' || d.code;
+          if (isCountry) return d.color;
+
+          // 🔥 DYNAMIC: Calculate company color in real-time
+          const company = d.company;
+          if (!company) return 'rgba(100, 100, 100, 0.2)';
+
+          // Check relevance for dimming
+          const isSectorRelevant = !selectedSector || company.sector === selectedSector;
+          const isTopicRelevant = !selectedTopic || selectedTopic === 'all' ||
+            (company.topics && company.topics.includes(selectedTopic));
+          const isRelevant = isSectorRelevant && isTopicRelevant;
+
+          const levelImpact = getEntityImpact(d.id);
+
+          // Calculate color
+          let pointColor = levelImpact && Math.abs(levelImpact.impactScore) > 0.05
+            ? getImpactColor(levelImpact.impactScore)
+            : isRelevant ? getSectorColor(company.sector) : 'rgba(100, 100, 100, 0.2)';
+
+          // Override with snapshot data
+          if (snapshot) {
+            const snapshotEntity = snapshot.entityValues.get(d.id);
+            if (snapshotEntity) {
+              pointColor = snapshotEntity.color;
+            }
+          }
+
+          return pointColor;
+        }}
         pointLabel={(d: any) => {
           // Detect if this is a company or country
           const isCountry = d.type === 'country' || d.code;
@@ -1054,13 +1068,30 @@ export default function Globe3D({
               </div>
             `;
           } else {
-            // Company label
+            // Company label - 🔥 Calculate impact dynamically
+            const company = d.company;
+            const sectorColor = company ? getSectorColor(company.sector) : '#00E5FF';
+
+            // Calculate impact dynamically
+            let impact = 0;
+            if (company) {
+              const sectorImpact =
+                company.sector === 'BANKING' ? calculatedImpacts.banking :
+                company.sector === 'REALESTATE' ? calculatedImpacts.realEstate :
+                company.sector === 'MANUFACTURING' ? calculatedImpacts.manufacturing :
+                company.sector === 'SEMICONDUCTOR' ? calculatedImpacts.semiconductor :
+                company.sector === 'CRYPTO' ? calculatedImpacts.crypto : 0;
+
+              const levelImpact = getEntityImpact(d.id);
+              impact = sectorImpact + (levelImpact?.impactPercentage || 0);
+            }
+
             return `
-              <div style="background: rgba(0, 0, 0, 0.95); padding: 10px; border-radius: 8px; border: 2px solid ${d.color};">
-                <div style="color: ${d.color}; font-weight: bold; font-size: 14px; margin-bottom: 6px;">${d.name}</div>
+              <div style="background: rgba(0, 0, 0, 0.95); padding: 10px; border-radius: 8px; border: 2px solid ${sectorColor};">
+                <div style="color: ${sectorColor}; font-weight: bold; font-size: 14px; margin-bottom: 6px;">${d.name}</div>
                 <div style="color: white; font-size: 11px; margin-bottom: 4px;">Ticker: <span style="color: #00E5FF;">${d.ticker || 'N/A'}</span></div>
-                <div style="color: white; font-size: 11px; margin-bottom: 4px;">Sector: <span style="color: ${d.color};">${d.sector || 'N/A'}</span></div>
-                <div style="color: white; font-size: 11px;">Impact: <span style="color: ${d.impact >= 0 ? '#00FF9F' : '#FF4444'};">${d.impact >= 0 ? '+' : ''}${(d.impact || 0).toFixed(2)}%</span></div>
+                <div style="color: white; font-size: 11px; margin-bottom: 4px;">Sector: <span style="color: ${sectorColor};">${d.sector || 'N/A'}</span></div>
+                <div style="color: white; font-size: 11px;">Impact: <span style="color: ${impact >= 0 ? '#00FF9F' : '#FF4444'};">${impact >= 0 ? '+' : ''}${impact.toFixed(2)}%</span></div>
               </div>
             `;
           }

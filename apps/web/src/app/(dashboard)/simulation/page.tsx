@@ -1108,17 +1108,20 @@ export default function SimulationPage() {
               <div className="p-3 space-y-1.5 max-h-64 overflow-y-auto">
                 {currentSnapshot && currentSnapshot.entityValues.size > 0 ? (
                   Array.from(currentSnapshot.entityValues.entries())
-                    .filter(([_, entity]) => entity.changePercent && Math.abs(entity.changePercent) > 0.01)
-                    .sort((a, b) => Math.abs(b[1].changePercent || 0) - Math.abs(a[1].changePercent || 0))
+                    .filter(([_, entity]) => entity.changeRate && Math.abs(entity.changeRate) > 0.01)
+                    .sort((a, b) => Math.abs(b[1].changeRate || 0) - Math.abs(a[1].changeRate || 0))
                     .slice(0, 5)
                     .map(([entityId, entity], idx) => {
-                      const isPositive = (entity.changePercent || 0) >= 0;
+                      const changeValue = entity.changeRate || 0;
+                      const isPositive = changeValue >= 0;
                       const changeColor = isPositive ? 'text-accent-emerald' : 'text-red-400';
 
                       // Extract entity name from ID
-                      const entityName = entity.name || entityId.replace(/^(company|component|product)-/, '').replace(/-/g, ' ').toUpperCase();
-                      const entityType = entityId.startsWith('company-') ? 'COMPANY' :
-                                        entityId.startsWith('component-') ? 'COMPONENT' : 'PRODUCT';
+                      const entityName = entity.entityName || entityId.replace(/^(company|component|product)-/, '').replace(/-/g, ' ').toUpperCase();
+                      const entityType = entity.entityType || (
+                        entityId.startsWith('company-') ? 'COMPANY' :
+                        entityId.startsWith('component-') ? 'COMPONENT' : 'PRODUCT'
+                      );
 
                       return (
                         <div key={entityId} className="p-2 border border-accent-emerald/20 rounded bg-black/40">
@@ -1128,11 +1131,11 @@ export default function SimulationPage() {
                                 {entityName}
                               </div>
                               <div className="text-[9px] text-text-tertiary">
-                                {entityType}
+                                {entityType.toUpperCase()}
                               </div>
                             </div>
                             <div className={`text-xs font-mono font-bold ${changeColor} flex-shrink-0`}>
-                              {isPositive ? '+' : ''}{((entity.changePercent || 0) * 100).toFixed(1)}%
+                              {isPositive ? '+' : ''}{(changeValue * 100).toFixed(1)}%
                             </div>
                           </div>
                         </div>
