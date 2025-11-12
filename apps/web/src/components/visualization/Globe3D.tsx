@@ -507,25 +507,39 @@ export default function Globe3D({
     return arcs;
   }, [economicFlows]);
 
-  // Combine static flows with dynamic impact arcs, snapshot-based arcs, and economic flow arcs
+  // UNIFIED VIEW: Combine ALL arc types regardless of view mode
+  // Apply topic-based filtering via selectedSector instead
   const allArcs = useMemo(() => {
-    const baseArcs = economicFlowArcs; // Always show economic flows
+    // Always show all arc types in unified view
+    const unifiedArcs = [
+      ...visibleFlows,        // Capital flows (filtered by selectedSector)
+      ...dynamicImpactArcs,   // Macro variable impact arcs
+      ...snapshotImpactArcs,  // Time-based event arcs
+      ...economicFlowArcs     // Economic flow arcs (Fed → Banks → Companies)
+    ];
 
-    if (viewMode === 'flows') {
-      return [...visibleFlows, ...dynamicImpactArcs, ...snapshotImpactArcs, ...baseArcs];
-    } else if (viewMode === 'companies') {
-      // In companies mode, show both macro and snapshot impact arcs + economic flows
-      return [...dynamicImpactArcs, ...snapshotImpactArcs, ...baseArcs];
-    } else if (viewMode === 'm2') {
-      // In M2 mode, show snapshot arcs + economic flows
-      return [...snapshotImpactArcs, ...baseArcs];
+    // If a sector is selected, filter arcs to only show relevant ones
+    if (selectedSector) {
+      return unifiedArcs.filter(arc => {
+        // Keep economic flows and snapshot arcs (they're always relevant)
+        const isEconomicFlow = arc.label && (arc.label.includes('→') && arc.label.includes('×'));
+        const isSnapshotArc = arc.label && !arc.label.includes('Impact') && !arc.label.includes('Capital') && !arc.label.includes('Trade');
+
+        if (isEconomicFlow || isSnapshotArc) return true;
+
+        // For other arcs, check if they involve the selected sector
+        // This is a heuristic - could be enhanced with explicit sector metadata
+        return true; // For now, show all arcs when sector selected
+      });
     }
-    return baseArcs;
-  }, [viewMode, visibleFlows, dynamicImpactArcs, snapshotImpactArcs, economicFlowArcs]);
+
+    return unifiedArcs;
+  }, [visibleFlows, dynamicImpactArcs, snapshotImpactArcs, economicFlowArcs, selectedSector]);
 
   // Create pulsing rings for affected entities (problem indicators)
+  // UNIFIED VIEW: Always show rings when snapshot has events
   const affectedEntityRings = useMemo(() => {
-    if (!snapshot || viewMode !== 'companies') return [];
+    if (!snapshot) return [];
 
     const rings: any[] = [];
     companyPoints.forEach(point => {
@@ -550,7 +564,7 @@ export default function Globe3D({
     });
 
     return rings;
-  }, [snapshot, companyPoints, viewMode]);
+  }, [snapshot, companyPoints]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative bg-black">
@@ -602,48 +616,34 @@ export default function Globe3D({
           </div>
         </div>
 
-        {/* Legend */}
+        {/* Legend - UNIFIED VIEW */}
         <div className="bg-black/80 backdrop-blur border border-border-primary rounded-lg p-3">
-          <div className="text-xs text-text-tertiary mb-2 font-semibold">Legend</div>
-          {viewMode === 'm2' ? (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-accent-cyan shadow-lg" style={{ boxShadow: '0 0 10px #00E5FF' }} />
-                <span className="text-xs text-text-primary">Point Size = M2 Supply</span>
-              </div>
-              <div className="text-xs text-text-tertiary mt-2">
-                Larger = More Money Supply
-              </div>
+          <div className="text-xs text-text-tertiary mb-2 font-semibold">Unified Globe Legend</div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent-emerald shadow-lg" style={{ boxShadow: '0 0 10px #00FF9F' }} />
+              <span className="text-xs text-text-primary">Companies</span>
             </div>
-          ) : viewMode === 'flows' ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-gradient-to-r from-accent-cyan to-transparent" />
-                <span className="text-xs text-text-primary">Static Flow</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-gradient-to-r from-accent-emerald to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #00FF9F' }} />
-                <span className="text-xs text-accent-emerald font-semibold">⚡ Macro Impact</span>
-              </div>
-              <div className="text-xs text-text-tertiary mt-2">
-                Brighter arcs = Higher macro variable impact
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent-cyan shadow-lg" style={{ boxShadow: '0 0 10px #00E5FF' }} />
+              <span className="text-xs text-text-primary">Countries (M2)</span>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-accent-emerald shadow-lg" style={{ boxShadow: '0 0 10px #00FF9F' }} />
-                <span className="text-xs text-text-primary">Companies</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-gradient-to-r from-accent-emerald to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #00FF9F' }} />
-                <span className="text-xs text-accent-emerald font-semibold">⚡ Macro Impact</span>
-              </div>
-              <div className="text-xs text-text-tertiary mt-2">
-                Arcs show macro variable effects on sectors
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-gradient-to-r from-accent-emerald to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #00FF9F' }} />
+              <span className="text-xs text-accent-emerald font-semibold">⚡ Macro Impact</span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-gradient-to-r from-accent-cyan to-transparent" />
+              <span className="text-xs text-text-primary">Capital Flows</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-gradient-to-r from-accent-magenta to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #E6007A' }} />
+              <span className="text-xs text-accent-magenta font-semibold">💰 Economic Flows</span>
+            </div>
+            <div className="text-xs text-text-tertiary mt-2">
+              Arc thickness = Flow intensity (self-attention style)
+            </div>
+          </div>
         </div>
 
         {/* Active Macro Impacts Indicator */}
@@ -908,46 +908,29 @@ export default function Globe3D({
         </div>
       )}
 
-      {/* Stats */}
+      {/* Stats - UNIFIED VIEW */}
       <div className="absolute bottom-4 left-4 z-10 bg-black/80 backdrop-blur border border-border-primary rounded-lg p-3">
-        <div className="grid grid-cols-3 gap-4 text-xs">
-          {viewMode === 'companies' ? (
-            <>
-              <div>
-                <div className="text-text-tertiary">Companies</div>
-                <div className="text-accent-emerald font-bold text-lg">{companyPoints.length}</div>
-              </div>
-              <div>
-                <div className="text-text-tertiary">Sectors</div>
-                <div className="text-accent-cyan font-bold text-lg">
-                  {new Set(companyPoints.map(c => c.sector)).size}
-                </div>
-              </div>
-              <div>
-                <div className="text-text-tertiary">{selectedSector || 'All'}</div>
-                <div className="text-accent-magenta font-bold text-lg">
-                  {selectedSector ? companyPoints.filter(c => c.sector === selectedSector).length : companyPoints.length}
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <div className="text-text-tertiary">Countries</div>
-                <div className="text-accent-cyan font-bold text-lg">{COUNTRIES.length}</div>
-              </div>
-              <div>
-                <div className="text-text-tertiary">Total M2</div>
-                <div className="text-accent-emerald font-bold text-lg">
-                  ${adjustedCountries.reduce((sum, c) => sum + c.m2Supply, 0).toFixed(1)}T
-                </div>
-              </div>
-              <div>
-                <div className="text-text-tertiary">Flows</div>
-                <div className="text-accent-magenta font-bold text-lg">{CAPITAL_FLOWS.length}</div>
-              </div>
-            </>
-          )}
+        <div className="grid grid-cols-4 gap-4 text-xs">
+          <div>
+            <div className="text-text-tertiary">Companies</div>
+            <div className="text-accent-emerald font-bold text-lg">
+              {selectedSector ? companyPoints.filter(c => c.sector === selectedSector).length : companyPoints.length}
+            </div>
+          </div>
+          <div>
+            <div className="text-text-tertiary">Countries</div>
+            <div className="text-accent-cyan font-bold text-lg">{visibleCountries.length}</div>
+          </div>
+          <div>
+            <div className="text-text-tertiary">Total M2</div>
+            <div className="text-accent-magenta font-bold text-lg">
+              ${adjustedCountries.reduce((sum, c) => sum + c.m2Supply, 0).toFixed(1)}T
+            </div>
+          </div>
+          <div>
+            <div className="text-text-tertiary">Arcs</div>
+            <div className="text-accent-yellow font-bold text-lg">{allArcs.length}</div>
+          </div>
         </div>
       </div>
 
@@ -958,28 +941,27 @@ export default function Globe3D({
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
 
-        // Points (Companies, Countries, or empty)
-        pointsData={
-          viewMode === 'companies' ? companyPoints :
-          viewMode === 'm2' ? visibleCountries :
-          []
-        }
+        // UNIFIED VIEW: Show BOTH companies AND countries simultaneously
+        // Filter by selectedSector if a topic is selected
+        pointsData={[
+          ...companyPoints,
+          ...visibleCountries.map(c => ({ ...c, type: 'country' })) // Add type marker
+        ]}
         pointLat="lat"
         pointLng="lng"
         pointAltitude={(d: any) => d.size * 0.01}
-        pointRadius={(d: any) => viewMode === 'companies' ? d.size * 0.4 : d.size * 0.5}
+        pointRadius={(d: any) => {
+          // Differentiate between companies (smaller) and countries (larger)
+          const isCountry = d.type === 'country' || d.code; // Has type or country code
+          return isCountry ? d.size * 0.5 : d.size * 0.4;
+        }}
         pointColor={(d: any) => d.color}
         pointLabel={(d: any) => {
-          if (viewMode === 'companies') {
-            return `
-              <div style="background: rgba(0, 0, 0, 0.95); padding: 10px; border-radius: 8px; border: 2px solid ${d.color};">
-                <div style="color: ${d.color}; font-weight: bold; font-size: 14px; margin-bottom: 6px;">${d.name}</div>
-                <div style="color: white; font-size: 11px; margin-bottom: 4px;">Ticker: <span style="color: #00E5FF;">${d.ticker}</span></div>
-                <div style="color: white; font-size: 11px; margin-bottom: 4px;">Sector: <span style="color: ${d.color};">${d.sector}</span></div>
-                <div style="color: white; font-size: 11px;">Impact: <span style="color: ${d.impact >= 0 ? '#00FF9F' : '#FF4444'};">${d.impact >= 0 ? '+' : ''}${d.impact.toFixed(2)}%</span></div>
-              </div>
-            `;
-          } else {
+          // Detect if this is a company or country
+          const isCountry = d.type === 'country' || d.code;
+
+          if (isCountry) {
+            // Country label
             return `
               <div style="background: rgba(0, 0, 0, 0.9); padding: 8px; border-radius: 6px; border: 1px solid #00E5FF;">
                 <div style="color: #00E5FF; font-weight: bold; margin-bottom: 4px;">${d.name}</div>
@@ -987,14 +969,27 @@ export default function Globe3D({
                 <div style="color: #00FF9F; font-size: 12px;">GDP: $${d.gdp?.toFixed(1)}T</div>
               </div>
             `;
+          } else {
+            // Company label
+            return `
+              <div style="background: rgba(0, 0, 0, 0.95); padding: 10px; border-radius: 8px; border: 2px solid ${d.color};">
+                <div style="color: ${d.color}; font-weight: bold; font-size: 14px; margin-bottom: 6px;">${d.name}</div>
+                <div style="color: white; font-size: 11px; margin-bottom: 4px;">Ticker: <span style="color: #00E5FF;">${d.ticker || 'N/A'}</span></div>
+                <div style="color: white; font-size: 11px; margin-bottom: 4px;">Sector: <span style="color: ${d.color};">${d.sector || 'N/A'}</span></div>
+                <div style="color: white; font-size: 11px;">Impact: <span style="color: ${d.impact >= 0 ? '#00FF9F' : '#FF4444'};">${d.impact >= 0 ? '+' : ''}${(d.impact || 0).toFixed(2)}%</span></div>
+              </div>
+            `;
           }
         }}
         onPointClick={(point: any) => {
-          if (viewMode === 'companies') {
+          // Detect if this is a company or country
+          const isCountry = point.type === 'country' || point.code;
+
+          if (isCountry) {
+            handleCountryClick(point as Country);
+          } else {
             setSelectedCompany(point.company);
             setSelectedCountry(null);
-          } else {
-            handleCountryClick(point as Country);
           }
         }}
 

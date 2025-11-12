@@ -113,7 +113,7 @@ export default function SimulationPage() {
   // Local state
   const [selectedSector, setSelectedSector] = useState<Sector>(null);
   const [viewMode, setViewMode] = useState<'split' | 'globe' | 'network' | 'supply-chain' | 'economic-flow' | 'hedge-fund'>('split');
-  const [globeViewMode, setGlobeViewMode] = useState<'companies' | 'flows' | 'm2'>('companies');
+  // globeViewMode removed - now using unified view that shows everything
   const [showElementLibrary, setShowElementLibrary] = useState(false);
   const [showScenarios, setShowScenarios] = useState(true); // Open by default
   const [showAdvancedControls, setShowAdvancedControls] = useState(false);
@@ -315,29 +315,32 @@ export default function SimulationPage() {
       </div>
 
       <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Sidebar - Sector Focus */}
-        <div className="w-64 border-r border-border-primary bg-black/50 backdrop-blur p-4 overflow-y-auto">
+        {/* Left Sidebar - Enhanced Controls */}
+        <div className="w-96 border-r border-border-primary bg-black/50 backdrop-blur p-6 overflow-y-auto">
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap size={16} className="text-accent-cyan" />
-              <h3 className="text-sm font-semibold text-text-primary">Sector Focus</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <Zap size={20} className="text-accent-cyan" />
+              <h3 className="text-base font-semibold text-text-primary">Simulation Topics</h3>
             </div>
-            <p className="text-xs text-text-tertiary mb-3">
-              Select a sector to highlight related elements in both Globe and Network Graph
+            <p className="text-sm text-text-tertiary mb-4">
+              Select a topic to filter globe entities and focus on relevant relationships
             </p>
 
             <div className="space-y-2">
               <button
                 onClick={() => setSelectedSector(null)}
-                className={`w-full px-3 py-2.5 rounded-lg text-left transition-all ${
+                className={`w-full px-4 py-3 rounded-lg text-left transition-all ${
                   selectedSector === null
                     ? 'bg-accent-cyan text-black font-semibold shadow-lg shadow-accent-cyan/50'
                     : 'bg-background-secondary text-text-secondary hover:bg-background-tertiary hover:text-text-primary'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">🌍</span>
-                  <span className="text-sm">All Sectors (Overall)</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🌍</span>
+                  <div>
+                    <div className="text-sm font-medium">All Entities</div>
+                    <div className="text-xs opacity-70">Complete 9-level ontology</div>
+                  </div>
                 </div>
               </button>
 
@@ -345,7 +348,7 @@ export default function SimulationPage() {
                 <button
                   key={sector.id}
                   onClick={() => setSelectedSector(sector.id as Sector)}
-                  className={`w-full px-3 py-2.5 rounded-lg text-left transition-all border ${
+                  className={`w-full px-4 py-3 rounded-lg text-left transition-all border ${
                     selectedSector === sector.id
                       ? 'border-accent-cyan bg-accent-cyan/10 shadow-lg shadow-accent-cyan/20'
                       : 'border-border-primary bg-background-secondary hover:border-accent-cyan/50'
@@ -355,9 +358,12 @@ export default function SimulationPage() {
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{sector.icon}</span>
-                      <span className="text-sm font-medium text-text-primary">{sector.label}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{sector.icon}</span>
+                      <div>
+                        <div className="text-sm font-medium text-text-primary">{sector.label}</div>
+                        <div className="text-xs text-text-tertiary">Topic-focused view</div>
+                      </div>
                     </div>
                     <div
                       className={`text-xs font-bold px-2 py-1 rounded ${
@@ -372,22 +378,22 @@ export default function SimulationPage() {
             </div>
           </div>
 
-          {/* Macro Controller */}
+          {/* Macro Controller - Enhanced */}
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Settings size={16} className="text-accent-magenta" />
-              <h3 className="text-sm font-semibold text-text-primary">Macro Controller</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <Settings size={20} className="text-accent-magenta" />
+              <h3 className="text-base font-semibold text-text-primary">Macro Variables</h3>
             </div>
-            <p className="text-xs text-text-tertiary mb-3">
-              Adjust variables to see real-time impact
+            <p className="text-sm text-text-tertiary mb-4">
+              Adjust to see real-time impact on globe entities
             </p>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {macroControls.map(control => (
-                <div key={control.id} className="space-y-1">
+                <div key={control.id} className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs text-text-secondary">{control.label}</label>
-                    <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                    <label className="text-sm font-medium text-text-secondary">{control.label}</label>
+                    <span className={`text-sm font-mono font-bold px-3 py-1 rounded ${
                       changedMacroId === control.id && macroChanging
                         ? 'bg-accent-cyan text-black animate-pulse'
                         : 'bg-background-tertiary text-accent-cyan'
@@ -402,7 +408,7 @@ export default function SimulationPage() {
                     step={control.step}
                     value={control.value}
                     onChange={(e) => handleMacroChange(control.id, parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-accent-cyan"
+                    className="w-full h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-accent-cyan"
                     style={{
                       background: changedMacroId === control.id && macroChanging
                         ? 'linear-gradient(90deg, #00E5FF 0%, #E6007A 100%)'
@@ -414,52 +420,34 @@ export default function SimulationPage() {
             </div>
           </div>
 
-          {/* Legend - Globe Style */}
+          {/* Legend - Unified Globe View */}
           <div className="mb-6">
             <div className="bg-black/80 backdrop-blur border border-border-primary rounded-lg p-3">
               <div className="flex items-center gap-2 mb-3">
                 <Info size={14} className="text-accent-cyan" />
-                <div className="text-xs text-text-tertiary font-semibold">Legend</div>
+                <div className="text-xs text-text-tertiary font-semibold">Unified Globe Legend</div>
               </div>
-              {globeViewMode === 'm2' ? (
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-accent-cyan shadow-lg" style={{ boxShadow: '0 0 10px #00E5FF' }} />
-                    <span className="text-xs text-text-primary">Point Size = M2 Supply</span>
-                  </div>
-                  <div className="text-xs text-text-tertiary mt-2">
-                    Larger = More Money Supply
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-accent-emerald shadow-lg" style={{ boxShadow: '0 0 10px #00FF9F' }} />
+                  <span className="text-xs text-text-primary">Companies</span>
                 </div>
-              ) : globeViewMode === 'flows' ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-0.5 bg-gradient-to-r from-accent-cyan to-transparent" />
-                    <span className="text-xs text-text-primary">Static Flow</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-0.5 bg-gradient-to-r from-accent-emerald to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #00FF9F' }} />
-                    <span className="text-xs text-accent-emerald font-semibold">⚡ Macro Impact</span>
-                  </div>
-                  <div className="text-xs text-text-tertiary mt-2">
-                    Brighter arcs = Higher macro variable impact
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-accent-cyan shadow-lg" style={{ boxShadow: '0 0 10px #00E5FF' }} />
+                  <span className="text-xs text-text-primary">Countries (M2)</span>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-accent-emerald shadow-lg" style={{ boxShadow: '0 0 10px #00FF9F' }} />
-                    <span className="text-xs text-text-primary">Companies</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-0.5 bg-gradient-to-r from-accent-emerald to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #00FF9F' }} />
-                    <span className="text-xs text-accent-emerald font-semibold">⚡ Macro Impact</span>
-                  </div>
-                  <div className="text-xs text-text-tertiary mt-2">
-                    Arcs show macro variable effects on sectors
-                  </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-0.5 bg-gradient-to-r from-accent-emerald to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #00FF9F' }} />
+                  <span className="text-xs text-accent-emerald font-semibold">⚡ Macro Impact</span>
                 </div>
-              )}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-0.5 bg-gradient-to-r from-accent-magenta to-transparent shadow-lg" style={{ boxShadow: '0 0 8px #E6007A' }} />
+                  <span className="text-xs text-accent-magenta font-semibold">💰 Economic Flow</span>
+                </div>
+                <div className="text-xs text-text-tertiary mt-2">
+                  Arc thickness reflects flow intensity (self-attention style)
+                </div>
+              </div>
             </div>
           </div>
 
@@ -578,109 +566,73 @@ export default function SimulationPage() {
 
           {/* View Mode */}
           <div>
-            <h3 className="text-xs font-semibold text-text-tertiary mb-2">View Layout</h3>
-            <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-text-tertiary mb-3">View Mode</h3>
+            <div className="space-y-2">
               <button
                 onClick={() => setViewMode('split')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   viewMode === 'split'
                     ? 'bg-accent-cyan text-black'
                     : 'bg-background-secondary text-text-secondary hover:text-text-primary'
                 }`}
               >
-                Split View (Globe + Network)
-              </button>
-              <button
-                onClick={() => setViewMode('globe')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  viewMode === 'globe'
-                    ? 'bg-accent-emerald text-black'
-                    : 'bg-background-secondary text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <Globe size={12} className="inline mr-1" />
-                Globe Only
+                <div className="flex items-center gap-2">
+                  <Globe size={16} />
+                  <span>Unified Globe View</span>
+                </div>
+                <div className="text-xs opacity-70 mt-1">Companies + Flows + Impacts</div>
               </button>
               <button
                 onClick={() => setViewMode('network')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   viewMode === 'network'
                     ? 'bg-accent-magenta text-black'
                     : 'bg-background-secondary text-text-secondary hover:text-text-primary'
                 }`}
               >
-                <Network size={12} className="inline mr-1" />
-                Network Only
+                <div className="flex items-center gap-2">
+                  <Network size={16} />
+                  <span>Network Graph</span>
+                </div>
               </button>
               <button
                 onClick={() => setViewMode('supply-chain')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   viewMode === 'supply-chain'
                     ? 'bg-purple-500 text-white'
                     : 'bg-background-secondary text-text-secondary hover:text-text-primary'
                 }`}
               >
-                <GitBranch size={12} className="inline mr-1" />
-                Supply Chain
+                <div className="flex items-center gap-2">
+                  <GitBranch size={16} />
+                  <span>Supply Chain</span>
+                </div>
               </button>
               <button
                 onClick={() => setViewMode('economic-flow')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   viewMode === 'economic-flow'
                     ? 'bg-emerald-500 text-white'
                     : 'bg-background-secondary text-text-secondary hover:text-text-primary'
                 }`}
               >
-                <Activity size={12} className="inline mr-1" />
-                Economic Flows
+                <div className="flex items-center gap-2">
+                  <Activity size={16} />
+                  <span>Economic Flows</span>
+                </div>
               </button>
               <button
                 onClick={() => setViewMode('hedge-fund')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   viewMode === 'hedge-fund'
                     ? 'bg-pink-500 text-white'
                     : 'bg-background-secondary text-text-secondary hover:text-text-primary'
                 }`}
               >
-                <DollarSign size={12} className="inline mr-1" />
-                Hedge Fund
-              </button>
-            </div>
-          </div>
-
-          {/* Globe View Mode */}
-          <div>
-            <h3 className="text-xs font-semibold text-text-tertiary mb-2">Globe Display</h3>
-            <div className="space-y-1">
-              <button
-                onClick={() => setGlobeViewMode('companies')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  globeViewMode === 'companies'
-                    ? 'bg-accent-cyan text-black'
-                    : 'bg-background-secondary text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                🏢 Companies
-              </button>
-              <button
-                onClick={() => setGlobeViewMode('flows')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  globeViewMode === 'flows'
-                    ? 'bg-accent-emerald text-black'
-                    : 'bg-background-secondary text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                💸 Cash Flows
-              </button>
-              <button
-                onClick={() => setGlobeViewMode('m2')}
-                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                  globeViewMode === 'm2'
-                    ? 'bg-accent-magenta text-black'
-                    : 'bg-background-secondary text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                💰 M2 Liquidity
+                <div className="flex items-center gap-2">
+                  <DollarSign size={16} />
+                  <span>Hedge Fund</span>
+                </div>
               </button>
             </div>
           </div>
@@ -700,7 +652,7 @@ export default function SimulationPage() {
               <div className="border-r border-border-primary relative h-full w-full">
                 <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur border border-accent-cyan rounded px-2 py-1">
                   <span className="text-xs font-semibold text-accent-cyan">
-                    Globe 3D - {globeViewMode === 'companies' ? 'Companies' : globeViewMode === 'flows' ? 'Cash Flows' : 'M2 Liquidity'}
+                    Globe 3D - Unified View (Companies + Countries + All Flows)
                   </span>
                 </div>
                 {/* Date Legend - Top Right */}
@@ -723,7 +675,7 @@ export default function SimulationPage() {
                     </div>
                   </div>
                 )}
-                <Globe3D selectedSector={selectedSector} showControls={false} viewMode={globeViewMode} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
+                <Globe3D selectedSector={selectedSector} showControls={false} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
               </div>
               <div className="relative h-full w-full">
                 <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur border border-accent-magenta rounded px-2 py-1">
@@ -758,7 +710,7 @@ export default function SimulationPage() {
             <div className="h-full relative">
               <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur border border-accent-cyan rounded px-2 py-1">
                 <span className="text-xs font-semibold text-accent-cyan">
-                  Globe 3D - {globeViewMode === 'companies' ? 'Companies' : globeViewMode === 'flows' ? 'Cash Flows' : 'M2 Liquidity'}
+                  Globe 3D - Unified View (Companies + Countries + All Flows)
                 </span>
               </div>
               {/* Date Legend - Top Right */}
@@ -781,7 +733,7 @@ export default function SimulationPage() {
                   </div>
                 </div>
               )}
-              <Globe3D selectedSector={selectedSector} showControls={false} viewMode={globeViewMode} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
+              <Globe3D selectedSector={selectedSector} showControls={false} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
             </div>
           )}
 
