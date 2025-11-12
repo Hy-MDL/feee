@@ -345,13 +345,13 @@ export default function AdminDashboardPage() {
                   View Connections
                 </Button>
                 <Button
-                  onClick={() => setActiveTab('macros')}
+                  onClick={() => setActiveTab('connections')}
                   variant="secondary"
                   size="md"
                   className="w-full justify-start bg-accent-emerald/10 hover:bg-accent-emerald/20 border border-accent-emerald text-accent-emerald"
                 >
                   <Sliders size={16} className="mr-2" />
-                  Configure Macros
+                  View Network
                 </Button>
               </div>
 
@@ -1140,7 +1140,6 @@ export default function AdminDashboardPage() {
                 {/* Submit Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-border-primary">
                   <Button
-                    type="button"
                     variant="secondary"
                     size="md"
                     className="flex-1"
@@ -1148,7 +1147,6 @@ export default function AdminDashboardPage() {
                     Cancel
                   </Button>
                   <Button
-                    type="submit"
                     variant="primary"
                     size="md"
                     className="flex-1"

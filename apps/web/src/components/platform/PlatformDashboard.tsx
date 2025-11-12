@@ -12,7 +12,6 @@ import Movers from '../finance/Movers';
 import Watchlist from '../finance/Watchlist';
 import PriceAlertModal from '../finance/PriceAlertModal';
 import MacroControlPanel from '../macro/MacroControlPanel';
-import CircuitDiagram from '../macro/CircuitDiagram';
 import {
   MACRO_VARIABLES,
   MACRO_CATEGORIES,
@@ -636,11 +635,6 @@ export default function PlatformDashboard() {
 
         {/* CENTER (60%) - Main Analysis: Ontology-Focused */}
         <div className="flex-1 min-w-0 flex flex-col gap-4 overflow-hidden">
-          {/* Circuit Diagram */}
-          <div className="h-[350px] max-h-[350px] flex-shrink-0">
-            <CircuitDiagram />
-          </div>
-
           {/* Macro Impact Analysis with Controls */}
           <div className="h-[500px] max-h-[500px] flex-shrink-0">
             <Card className="h-full flex gap-4 p-4 overflow-hidden">
