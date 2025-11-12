@@ -114,7 +114,6 @@ export default function SimulationPage() {
   const [selectedSector, setSelectedSector] = useState<Sector>(null);
   const [viewMode, setViewMode] = useState<'split' | 'globe' | 'network' | 'supply-chain' | 'economic-flow' | 'hedge-fund'>('split');
   const [globeViewMode, setGlobeViewMode] = useState<'companies' | 'flows' | 'm2'>('companies');
-  const [showElementLibrary, setShowElementLibrary] = useState(false);
   const [showScenarios, setShowScenarios] = useState(true); // Open by default
   const [showAdvancedControls, setShowAdvancedControls] = useState(false);
   const [macroChanging, setMacroChanging] = useState(false);
@@ -1031,59 +1030,9 @@ export default function SimulationPage() {
           )}
         </div>
 
-        {/* Right Sidebar - Element Library & Scenarios */}
+        {/* Right Sidebar - Scenarios */}
         <div className="w-80 border-l border-border-primary bg-black/50 backdrop-blur overflow-y-auto">
           <div className="p-4 space-y-4">
-            {/* Element Library */}
-            <div>
-              <button
-                onClick={() => setShowElementLibrary(!showElementLibrary)}
-                className="w-full flex items-center justify-between p-3 bg-background-secondary hover:bg-background-tertiary rounded-lg border border-border-primary transition-all"
-              >
-                <div className="flex items-center gap-2">
-                  <Settings size={16} className="text-accent-cyan" />
-                  <span className="text-sm font-semibold">Element Library</span>
-                </div>
-                <span className="text-xs text-text-tertiary">{showElementLibrary ? '▼' : '▶'}</span>
-              </button>
-
-              {showElementLibrary && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs text-text-tertiary px-2">
-                    Drag & drop elements to create custom relationships (Coming Soon)
-                  </p>
-
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold text-text-secondary px-2 py-1">Relationship Types</div>
-                    <div className="space-y-1">
-                      {['Impact', 'Ownership', 'Supply Chain', 'Loan', 'Competition'].map(type => (
-                        <div
-                          key={type}
-                          className="px-3 py-2 bg-background-tertiary rounded border border-border-primary hover:border-accent-cyan transition-all cursor-move"
-                        >
-                          <span className="text-xs text-text-primary">{type}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold text-text-secondary px-2 py-1">Macro Variables</div>
-                    <div className="space-y-1">
-                      {['Interest Rate', 'GDP Growth', 'M2 Supply', 'Oil Price'].map(type => (
-                        <div
-                          key={type}
-                          className="px-3 py-2 bg-background-tertiary rounded border border-border-primary hover:border-accent-emerald transition-all cursor-move"
-                        >
-                          <span className="text-xs text-text-primary">{type}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Scenario Management */}
             <div>
               <button
