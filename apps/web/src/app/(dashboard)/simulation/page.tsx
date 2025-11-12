@@ -1098,38 +1098,12 @@ export default function SimulationPage() {
                 </button>
               </div>
             </div>
-                <div className="flex items-center gap-2">
-                  <Users size={16} className="text-accent-magenta" />
-                  <span className="text-sm font-semibold">Scenarios</span>
-                </div>
-                <span className="text-xs text-text-tertiary">{showScenarios ? '▼' : '▶'}</span>
-              </button>
 
-              {showScenarios && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs text-text-tertiary px-2">
-                    Save, load, and share custom economic scenarios
-                  </p>
+          </div>
+        </div>
 
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => setShowSaveDialog(true)}
-                      className="w-full px-3 py-2 bg-accent-cyan text-black text-xs font-semibold rounded-lg hover:bg-accent-cyan/80 transition-all"
-                    >
-                      <Save size={12} className="inline mr-1" />
-                      Save Current Scenario
-                    </button>
-                    <button
-                      onClick={() => setShowLoadDialog(true)}
-                      className="w-full px-3 py-2 bg-background-tertiary text-text-primary text-xs font-semibold rounded-lg hover:bg-background-secondary transition-all border border-border-primary"
-                    >
-                      <Play size={12} className="inline mr-1" />
-                      Load Scenario ({getAllScenarios().length})
-                    </button>
-                  </div>
-
-                  {/* Save Dialog */}
-                  {showSaveDialog && (
+        {/* Save Dialog - Terminal Style */}
+        {showSaveDialog && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                       <div className="bg-background-primary border-2 border-accent-cyan rounded-lg p-6 w-96 max-w-[90vw]">
                         <h3 className="text-lg font-bold text-text-primary mb-4">Save Scenario</h3>
@@ -1175,121 +1149,53 @@ export default function SimulationPage() {
                         </div>
                       </div>
                     </div>
-                  )}
+        )}
 
-                  {/* Load Dialog */}
-                  {showLoadDialog && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                      <div className="bg-background-primary border-2 border-accent-magenta rounded-lg p-6 w-[500px] max-w-[90vw] max-h-[80vh] overflow-y-auto">
-                        <h3 className="text-lg font-bold text-text-primary mb-4">Load Scenario</h3>
-                        <div className="space-y-2">
-                          {getAllScenarios().length === 0 ? (
-                            <p className="text-sm text-text-tertiary text-center py-8">
-                              No saved scenarios yet. Save your current state to create one!
-                            </p>
-                          ) : (
-                            getAllScenarios().map((scenario) => (
-                              <button
-                                key={scenario.id}
-                                onClick={() => handleLoadScenario(scenario.id)}
-                                className="w-full px-4 py-3 bg-background-secondary border border-border-primary rounded-lg hover:border-accent-magenta hover:bg-background-tertiary transition-all text-left"
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-base">{scenario.icon || '💾'}</span>
-                                      <span className="text-sm font-semibold text-text-primary">{scenario.name}</span>
-                                    </div>
-                                    <p className="text-xs text-text-tertiary line-clamp-2">{scenario.description}</p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <span className="text-[10px] text-text-tertiary">
-                                        {new Date(scenario.createdAt).toLocaleDateString()}
-                                      </span>
-                                      {scenario.tags && scenario.tags.length > 0 && (
-                                        <div className="flex gap-1">
-                                          {scenario.tags.slice(0, 2).map(tag => (
-                                            <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-accent-cyan/10 text-accent-cyan rounded">
-                                              {tag}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <Play size={16} className="text-accent-magenta mt-1" />
-                                </div>
-                              </button>
-                            ))
+        {/* Load Dialog - Terminal Style */}
+        {showLoadDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="bg-black border-2 border-accent-magenta rounded-lg p-6 w-[500px] max-w-[90vw] max-h-[80vh] overflow-y-auto font-mono">
+              <h3 className="text-lg font-bold text-accent-magenta mb-4 tracking-wider">LOAD SCENARIO</h3>
+              <div className="space-y-2">
+                {getAllScenarios().length === 0 ? (
+                  <p className="text-sm text-text-tertiary text-center py-8">
+                    NO SAVED SCENARIOS
+                  </p>
+                ) : (
+                  getAllScenarios().map((scenario) => (
+                    <button
+                      key={scenario.id}
+                      onClick={() => handleLoadScenario(scenario.id)}
+                      className="w-full px-4 py-3 bg-black border border-accent-magenta/50 rounded-lg hover:border-accent-magenta hover:bg-accent-magenta/10 transition-all text-left"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-bold text-accent-magenta">
+                              {scenario.name}
+                            </span>
+                            <span className="text-xs text-text-tertiary">
+                              {new Date(scenario.timestamp).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {scenario.description && (
+                            <p className="text-xs text-text-secondary">{scenario.description}</p>
                           )}
                         </div>
-                        <button
-                          onClick={() => setShowLoadDialog(false)}
-                          className="w-full mt-4 px-4 py-2 bg-background-secondary text-text-primary border border-border-primary rounded hover:bg-background-tertiary transition-all"
-                        >
-                          Close
-                        </button>
                       </div>
-                    </div>
-                  )}
-
-                  <div className="pt-3 border-t border-border-primary">
-                    <div className="text-xs font-semibold text-text-secondary mb-2">Historical Scenarios</div>
-                    <div className="space-y-2">
-                      {SCENARIOS.map(scenario => (
-                        <button
-                          key={scenario.id}
-                          onClick={() => applyScenario(scenario.id)}
-                          className={`w-full px-3 py-2 text-left rounded-lg transition-all border ${
-                            activeScenario === scenario.id
-                              ? 'bg-accent-cyan/10 border-accent-cyan text-accent-cyan shadow-lg shadow-accent-cyan/20'
-                              : 'bg-background-tertiary border-border-primary hover:border-accent-magenta hover:bg-background-secondary'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-base">{scenario.icon}</span>
-                            <span className="text-xs font-semibold">{scenario.name}</span>
-                          </div>
-                          <div className="text-[10px] text-text-tertiary">{scenario.description}</div>
-                          {activeScenario === scenario.id && (
-                            <div className="mt-2 pt-2 border-t border-accent-cyan/30">
-                              <div className="text-[10px] text-accent-cyan flex items-center gap-1">
-                                <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse" />
-                                Active
-                              </div>
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Current Status */}
-            <div className="bg-background-secondary border border-border-primary rounded-lg p-3">
-              <h3 className="text-xs font-semibold text-text-primary mb-2">Current Status</h3>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Selected Sector:</span>
-                  <span className="text-accent-cyan font-semibold">
-                    {selectedSector ? sectors.find(s => s.id === selectedSector)?.label : 'All Sectors'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Fed Rate:</span>
-                  <span className="text-accent-emerald font-mono font-bold">
-                    {(macroState['fed_funds_rate'] || 5.25).toFixed(2)}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">View Mode:</span>
-                  <span className="text-text-primary capitalize">{viewMode}</span>
-                </div>
+                    </button>
+                  ))
+                )}
               </div>
+              <button
+                onClick={() => setShowLoadDialog(false)}
+                className="w-full mt-4 px-4 py-2 bg-black text-text-primary border border-accent-magenta/50 rounded hover:bg-accent-magenta/10 transition-all tracking-wider"
+              >
+                CLOSE
+              </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Cascade Effects Animation */}
