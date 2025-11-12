@@ -14,6 +14,8 @@
 
 export type Sector = 'BANKING' | 'REALESTATE' | 'MANUFACTURING' | 'SEMICONDUCTOR' | 'OPTIONS' | 'CRYPTO' | 'COMMODITIES';
 
+export type Topic = 'supply-chain' | 'hedge-fund' | 'real-estate' | 'commodities' | 'crypto' | 'all';
+
 export interface Company {
   id: string;
   ticker: string;
@@ -21,6 +23,7 @@ export interface Company {
   name_en?: string;
   sector: Sector;
   country: string;
+  topics?: Topic[]; // 🔍 Topics for filtering (supply-chain, hedge-fund, real-estate, etc.)
 
   // Financial data
   financials: {
@@ -1827,6 +1830,35 @@ export function getCompanyCount(): { total: number; by_sector: Record<Sector, nu
   };
 }
 
+/**
+ * 🔍 Auto-assign topics to companies based on sector
+ * This enables topic-based filtering in visualizations
+ */
+export function assignTopicsToCompany(company: Company): Company {
+  const topicMap: Record<Sector, Topic[]> = {
+    'BANKING': ['hedge-fund'],
+    'REALESTATE': ['real-estate'],
+    'MANUFACTURING': ['supply-chain'],
+    'SEMICONDUCTOR': ['supply-chain'],
+    'OPTIONS': ['hedge-fund'],
+    'CRYPTO': ['crypto'],
+    'COMMODITIES': ['commodities', 'supply-chain'],
+  };
+
+  return {
+    ...company,
+    topics: topicMap[company.sector] || [],
+  };
+}
+
+/**
+ * 🔍 Get companies by topic
+ */
+export function getCompaniesByTopic(topic: Topic): Company[] {
+  if (topic === 'all') return companies;
+  return companies.filter(c => c.topics?.includes(topic));
+}
+
 // ========================================
 // SYNTHETIC DATA GENERATOR
 // (Expand dataset to 100+ companies)
@@ -1883,7 +1915,7 @@ const SYNTHETIC_SEMICONDUCTOR = generateSyntheticCompanies(SEMICONDUCTOR_COMPANI
 const SYNTHETIC_CRYPTO = generateSyntheticCompanies(CRYPTO_COMPANIES, 15);
 const SYNTHETIC_COMMODITIES = generateSyntheticCompanies(COMMODITIES_COMPANIES, 25);
 
-export const EXTENDED_COMPANIES: Company[] = [
+const EXTENDED_COMPANIES_RAW: Company[] = [
   ...ALL_COMPANIES,
   ...SYNTHETIC_BANKING,
   ...SYNTHETIC_REALESTATE,
@@ -1892,6 +1924,9 @@ export const EXTENDED_COMPANIES: Company[] = [
   ...SYNTHETIC_CRYPTO,
   ...SYNTHETIC_COMMODITIES,
 ];
+
+// 🔍 Apply topics to all companies automatically
+export const EXTENDED_COMPANIES: Company[] = EXTENDED_COMPANIES_RAW.map(assignTopicsToCompany);
 
 // Use extended dataset by default
 export const companies = EXTENDED_COMPANIES;

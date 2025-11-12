@@ -133,6 +133,7 @@ const CAPITAL_FLOWS = COMPREHENSIVE_FLOWS;
 
 interface Globe3DProps {
   selectedSector?: string | null;
+  selectedTopic?: 'supply-chain' | 'hedge-fund' | 'real-estate' | 'commodities' | 'crypto' | 'all' | null; // 🔍 Topic-based filtering
   showControls?: boolean;
   viewMode?: 'm2' | 'flows' | 'companies';
   snapshot?: DateSnapshot | null;
@@ -141,6 +142,7 @@ interface Globe3DProps {
 
 export default function Globe3D({
   selectedSector = null,
+  selectedTopic = null, // 🔍 Topic filter
   showControls = true,
   viewMode: externalViewMode,
   snapshot = null,
@@ -268,7 +270,15 @@ export default function Globe3D({
           company.sector === 'CRYPTO' ? calculatedImpacts.crypto :
           0;
 
-        const isRelevant = !selectedSector || company.sector === selectedSector;
+        // 🔍 Check sector relevance
+        const isSectorRelevant = !selectedSector || company.sector === selectedSector;
+
+        // 🔍 Check topic relevance
+        const isTopicRelevant = !selectedTopic || selectedTopic === 'all' ||
+          (company.topics && company.topics.includes(selectedTopic));
+
+        // 🔍 Overall relevance: must match both filters (if active)
+        const isRelevant = isSectorRelevant && isTopicRelevant;
 
         // Get level-specific impact for this company
         const companyEntityId = `company-${company.ticker?.toLowerCase() || company.name.toLowerCase().replace(/\s+/g, '-')}`;
@@ -283,10 +293,12 @@ export default function Globe3D({
           ? baseSize * getImpactSizeMultiplier(levelImpact.impactScore)
           : baseSize;
 
-        // Use impact color if level impact exists, otherwise sector color
+        // 🔍 Use impact color if level impact exists, otherwise:
+        // - Full color for relevant companies
+        // - Dimmed gray for filtered-out companies
         let pointColor = levelImpact && Math.abs(levelImpact.impactScore) > 0.05
           ? getImpactColor(levelImpact.impactScore)
-          : isRelevant ? getSectorColor(company.sector) : 'rgba(100, 100, 100, 0.3)';
+          : isRelevant ? getSectorColor(company.sector) : 'rgba(100, 100, 100, 0.2)';
 
         let finalSize = adjustedSize;
 
@@ -327,7 +339,7 @@ export default function Globe3D({
           affectedByEvent, // NEW: event details
         };
       });
-  }, [selectedSector, calculatedImpacts, entityImpacts, getEntityImpact, snapshot]);
+  }, [selectedSector, selectedTopic, calculatedImpacts, entityImpacts, getEntityImpact, snapshot]); // 🔍 Added selectedTopic
 
   // Helper to get RGB values from sector color (must come before dynamicImpactArcs)
   const getSectorRGB = (sector: string): string => {
@@ -542,23 +554,47 @@ export default function Globe3D({
       ...economicFlowArcs     // Economic flow arcs (Fed → Banks → Companies)
     ];
 
-    // If a sector is selected, filter arcs to only show relevant ones
-    if (selectedSector) {
-      return unifiedArcs.filter(arc => {
-        // Keep economic flows and snapshot arcs (they're always relevant)
+    // 🔍 Create a Set of relevant company IDs based on selected topic
+    let relevantCompanyIds: Set<string> | null = null;
+    if (selectedTopic && selectedTopic !== 'all') {
+      relevantCompanyIds = new Set(
+        companyPoints
+          .filter(point => {
+            const company = point.company;
+            return company.topics && company.topics.includes(selectedTopic);
+          })
+          .map(point => point.id)
+      );
+    }
+
+    // If a sector or topic is selected, filter arcs to only show relevant ones
+    if (selectedSector || (selectedTopic && selectedTopic !== 'all')) {
+      return unifiedArcs.map(arc => {
+        // Keep economic flows and snapshot arcs (they're always relevant) but dim if topic filtered
         const isEconomicFlow = arc.label && (arc.label.includes('→') && arc.label.includes('×'));
         const isSnapshotArc = arc.label && !arc.label.includes('Impact') && !arc.label.includes('Capital') && !arc.label.includes('Trade');
 
-        if (isEconomicFlow || isSnapshotArc) return true;
+        // 🔍 For topic filtering: dim arcs that don't connect relevant companies
+        if (relevantCompanyIds && !isEconomicFlow && !isSnapshotArc) {
+          // Check if this arc connects to any relevant companies
+          // Arc labels contain entity IDs or can be matched against companyPoints
+          const isRelevant = dynamicImpactArcs.includes(arc) || snapshotImpactArcs.includes(arc);
 
-        // For other arcs, check if they involve the selected sector
-        // This is a heuristic - could be enhanced with explicit sector metadata
-        return true; // For now, show all arcs when sector selected
+          if (!isRelevant) {
+            // Dim the arc by reducing alpha
+            return {
+              ...arc,
+              color: arc.color.replace(/[\d.]+\)$/, '0.15)') // Reduce alpha to 0.15
+            };
+          }
+        }
+
+        return arc;
       });
     }
 
     return unifiedArcs;
-  }, [visibleFlows, dynamicImpactArcs, snapshotImpactArcs, economicFlowArcs, selectedSector]);
+  }, [visibleFlows, dynamicImpactArcs, snapshotImpactArcs, economicFlowArcs, selectedSector, selectedTopic, companyPoints]); // 🔍 Added selectedTopic and companyPoints
 
   // Create pulsing rings for affected entities (problem indicators)
   // UNIFIED VIEW: Always show rings when snapshot has events
@@ -597,6 +633,15 @@ export default function Globe3D({
         <div className="absolute top-2 right-2 z-10 bg-accent-cyan/20 backdrop-blur border border-accent-cyan rounded-lg px-3 py-1.5">
           <span className="text-xs font-semibold text-accent-cyan">
             Focus: {selectedSector}
+          </span>
+        </div>
+      )}
+
+      {/* 🔍 Topic Filter Indicator */}
+      {selectedTopic && selectedTopic !== 'all' && (
+        <div className="absolute top-2 right-2 z-10 bg-accent-magenta/20 backdrop-blur border border-accent-magenta rounded-lg px-3 py-1.5" style={{ marginTop: selectedSector ? '3rem' : '0' }}>
+          <span className="text-xs font-semibold text-accent-magenta">
+            🔍 Topic: {selectedTopic.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
           </span>
         </div>
       )}

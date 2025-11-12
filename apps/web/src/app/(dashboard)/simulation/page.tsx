@@ -24,6 +24,7 @@ const Globe3D = dynamic(() => import('@/components/visualization/Globe3D'), { ss
 const ForceNetworkGraph3D = dynamic(() => import('@/components/visualization/ForceNetworkGraph3D'), { ssr: false });
 
 type Sector = 'BANKING' | 'REALESTATE' | 'MANUFACTURING' | 'SEMICONDUCTOR' | null;
+type Topic = 'supply-chain' | 'hedge-fund' | 'real-estate' | 'commodities' | 'crypto' | 'all'; // 🔍 Topic type
 
 interface MacroControl {
   id: string;
@@ -112,6 +113,7 @@ export default function SimulationPage() {
 
   // Local state
   const [selectedSector, setSelectedSector] = useState<Sector>(null);
+  const [selectedTopic, setSelectedTopic] = useState<Topic>('all'); // 🔍 Topic filter state
   const [viewMode, setViewMode] = useState<'split' | 'globe' | 'network' | 'supply-chain' | 'economic-flow' | 'hedge-fund'>('split');
   // globeViewMode removed - now using unified view that shows everything
   const [showElementLibrary, setShowElementLibrary] = useState(false);
@@ -303,6 +305,16 @@ export default function SimulationPage() {
     { id: 'CRYPTO', label: 'Crypto', color: '#E6007A', icon: '₿', impact: calculatedImpacts.crypto }
   ];
 
+  // 🔍 Topic filters for interactive supply chain/industry visualization
+  const topics = [
+    { id: 'all' as Topic, label: 'All Topics', icon: '🌍', description: 'Show all companies and relationships' },
+    { id: 'supply-chain' as Topic, label: 'Supply Chain', icon: '🔗', description: 'Manufacturing & semiconductor networks' },
+    { id: 'hedge-fund' as Topic, label: 'Hedge Funds', icon: '💰', description: 'Banking & financial institutions' },
+    { id: 'real-estate' as Topic, label: 'Real Estate', icon: '🏢', description: 'REITs & property markets' },
+    { id: 'commodities' as Topic, label: 'Commodities', icon: '⛏️', description: 'Mining, oil, gas & raw materials' },
+    { id: 'crypto' as Topic, label: 'Cryptocurrency', icon: '₿', description: 'Digital assets & blockchain' },
+  ];
+
   return (
     <div className="relative min-h-screen bg-black text-text-primary overflow-hidden">
       {/* Header */}
@@ -317,13 +329,45 @@ export default function SimulationPage() {
       <div className="flex h-[calc(100vh-80px)]">
         {/* Left Sidebar - Enhanced Controls */}
         <div className="w-96 border-r border-border-primary bg-black/50 backdrop-blur p-6 overflow-y-auto">
+          {/* 🔍 Topic Filter Section */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap size={20} className="text-accent-magenta" />
+              <h3 className="text-base font-semibold text-text-primary">🔍 Topic Filter</h3>
+            </div>
+            <p className="text-sm text-text-tertiary mb-4">
+              Focus on specific industries and supply chains
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              {topics.map(topic => (
+                <button
+                  key={topic.id}
+                  onClick={() => setSelectedTopic(topic.id)}
+                  className={`px-3 py-2 rounded-lg text-left transition-all border ${
+                    selectedTopic === topic.id
+                      ? 'border-accent-magenta bg-accent-magenta/20 shadow-lg shadow-accent-magenta/20'
+                      : 'border-border-primary bg-background-secondary hover:border-accent-magenta/50 hover:bg-background-tertiary'
+                  }`}
+                  title={topic.description}
+                >
+                  <div className="flex flex-col gap-1">
+                    <span className="text-lg">{topic.icon}</span>
+                    <span className="text-xs font-medium text-text-primary">{topic.label}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sector Selection */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
               <Zap size={20} className="text-accent-cyan" />
-              <h3 className="text-base font-semibold text-text-primary">Simulation Topics</h3>
+              <h3 className="text-base font-semibold text-text-primary">Sector Filter</h3>
             </div>
             <p className="text-sm text-text-tertiary mb-4">
-              Select a topic to filter globe entities and focus on relevant relationships
+              Select a sector to see macro impact on specific industries
             </p>
 
             <div className="space-y-2">
@@ -338,8 +382,8 @@ export default function SimulationPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-xl">🌍</span>
                   <div>
-                    <div className="text-sm font-medium">All Entities</div>
-                    <div className="text-xs opacity-70">Complete 9-level ontology</div>
+                    <div className="text-sm font-medium">All Sectors</div>
+                    <div className="text-xs opacity-70">Complete macro view</div>
                   </div>
                 </div>
               </button>
@@ -675,7 +719,7 @@ export default function SimulationPage() {
                     </div>
                   </div>
                 )}
-                <Globe3D selectedSector={selectedSector} showControls={false} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
+                <Globe3D selectedSector={selectedSector} selectedTopic={selectedTopic} showControls={false} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
               </div>
               <div className="relative h-full w-full">
                 <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur border border-accent-magenta rounded px-2 py-1">
