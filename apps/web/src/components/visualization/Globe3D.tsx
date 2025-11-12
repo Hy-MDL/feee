@@ -257,71 +257,13 @@ export default function Globe3D({
     return impacts;
   }, [macroState]);
 
-  // Prepare company points for Globe (must come before dynamicImpactArcs)
-  const companyPoints = useMemo(() => {
+  // 🔧 OPTIMIZED: Create stable point objects (prevent re-rendering/"popping")
+  // Only regenerate when companies or filters change, NOT when impacts change
+  const companyPointsBase = useMemo(() => {
     return companies
       .filter(c => c.location) // Only companies with location data
       .map(company => {
-        const sectorImpact =
-          company.sector === 'BANKING' ? calculatedImpacts.banking :
-          company.sector === 'REALESTATE' ? calculatedImpacts.realEstate :
-          company.sector === 'MANUFACTURING' ? calculatedImpacts.manufacturing :
-          company.sector === 'SEMICONDUCTOR' ? calculatedImpacts.semiconductor :
-          company.sector === 'CRYPTO' ? calculatedImpacts.crypto :
-          0;
-
-        // 🔍 Check sector relevance
-        const isSectorRelevant = !selectedSector || company.sector === selectedSector;
-
-        // 🔍 Check topic relevance
-        const isTopicRelevant = !selectedTopic || selectedTopic === 'all' ||
-          (company.topics && company.topics.includes(selectedTopic));
-
-        // 🔍 Overall relevance: must match both filters (if active)
-        const isRelevant = isSectorRelevant && isTopicRelevant;
-
-        // Get level-specific impact for this company
         const companyEntityId = `company-${company.ticker?.toLowerCase() || company.name.toLowerCase().replace(/\s+/g, '-')}`;
-        const levelImpact = getEntityImpact(companyEntityId);
-
-        // Combine macro sector impact with level-specific impact
-        const totalImpact = sectorImpact + (levelImpact?.impactPercentage || 0);
-
-        // Adjust size based on level impact (if any)
-        const baseSize = Math.log(company.financials.revenue + 1) * 0.3;
-        const adjustedSize = levelImpact
-          ? baseSize * getImpactSizeMultiplier(levelImpact.impactScore)
-          : baseSize;
-
-        // 🔍 Use impact color if level impact exists, otherwise:
-        // - Full color for relevant companies
-        // - Dimmed gray for filtered-out companies
-        let pointColor = levelImpact && Math.abs(levelImpact.impactScore) > 0.05
-          ? getImpactColor(levelImpact.impactScore)
-          : isRelevant ? getSectorColor(company.sector) : 'rgba(100, 100, 100, 0.2)';
-
-        let finalSize = adjustedSize;
-
-        // Check if entity is affected by recent events
-        let isAffected = false;
-        let affectedByEvent: any = null;
-
-        // Override with snapshot data if available
-        if (snapshot) {
-          const snapshotEntity = snapshot.entityValues.get(companyEntityId);
-          if (snapshotEntity) {
-            finalSize = snapshotEntity.size * baseSize; // Use snapshot size
-            pointColor = snapshotEntity.color; // Use snapshot color
-          }
-
-          // Check if this entity is in any recent events
-          snapshot.events.forEach(event => {
-            if (event.affectedEntities.includes(companyEntityId)) {
-              isAffected = true;
-              affectedByEvent = event;
-            }
-          });
-        }
 
         return {
           id: companyEntityId, // 🔑 CRITICAL: Stable ID prevents point re-rendering
@@ -330,16 +272,87 @@ export default function Globe3D({
           name: company.name_en || company.name,
           ticker: company.ticker,
           sector: company.sector,
-          size: finalSize,
-          color: pointColor,
-          impact: totalImpact,
-          company: company,
-          levelImpact: levelImpact, // Include for tooltip
-          isAffected, // NEW: flag for visual indicator
-          affectedByEvent, // NEW: event details
+          company: company, // Store full company data for dynamic calculations
         };
       });
-  }, [selectedSector, selectedTopic, calculatedImpacts, entityImpacts, getEntityImpact, snapshot]); // 🔍 Added selectedTopic
+  }, [selectedSector, selectedTopic]); // 🔧 ONLY depend on filters, NOT impacts
+
+  // Separate memoized calculation for visual properties
+  const companyPoints = useMemo(() => {
+    return companyPointsBase.map(point => {
+      const company = point.company;
+
+      const sectorImpact =
+        company.sector === 'BANKING' ? calculatedImpacts.banking :
+        company.sector === 'REALESTATE' ? calculatedImpacts.realEstate :
+        company.sector === 'MANUFACTURING' ? calculatedImpacts.manufacturing :
+        company.sector === 'SEMICONDUCTOR' ? calculatedImpacts.semiconductor :
+        company.sector === 'CRYPTO' ? calculatedImpacts.crypto :
+        0;
+
+      // 🔍 Check sector relevance
+      const isSectorRelevant = !selectedSector || company.sector === selectedSector;
+
+      // 🔍 Check topic relevance
+      const isTopicRelevant = !selectedTopic || selectedTopic === 'all' ||
+        (company.topics && company.topics.includes(selectedTopic));
+
+      // 🔍 Overall relevance: must match both filters (if active)
+      const isRelevant = isSectorRelevant && isTopicRelevant;
+
+      // Get level-specific impact for this company
+      const levelImpact = getEntityImpact(point.id);
+
+      // Combine macro sector impact with level-specific impact
+      const totalImpact = sectorImpact + (levelImpact?.impactPercentage || 0);
+
+      // Adjust size based on level impact (if any)
+      const baseSize = Math.log(company.financials.revenue + 1) * 0.3;
+      const adjustedSize = levelImpact
+        ? baseSize * getImpactSizeMultiplier(levelImpact.impactScore)
+        : baseSize;
+
+      // 🔍 Use impact color if level impact exists, otherwise:
+      // - Full color for relevant companies
+      // - Dimmed gray for filtered-out companies
+      let pointColor = levelImpact && Math.abs(levelImpact.impactScore) > 0.05
+        ? getImpactColor(levelImpact.impactScore)
+        : isRelevant ? getSectorColor(company.sector) : 'rgba(100, 100, 100, 0.2)';
+
+      let finalSize = adjustedSize;
+
+      // Check if entity is affected by recent events
+      let isAffected = false;
+      let affectedByEvent: any = null;
+
+      // Override with snapshot data if available
+      if (snapshot) {
+        const snapshotEntity = snapshot.entityValues.get(point.id);
+        if (snapshotEntity) {
+          finalSize = snapshotEntity.size * baseSize; // Use snapshot size
+          pointColor = snapshotEntity.color; // Use snapshot color
+        }
+
+        // Check if this entity is in any recent events
+        snapshot.events.forEach(event => {
+          if (event.affectedEntities.includes(point.id)) {
+            isAffected = true;
+            affectedByEvent = event;
+          }
+        });
+      }
+
+      return {
+        ...point, // 🔧 Spread stable base properties
+        size: finalSize,
+        color: pointColor,
+        impact: totalImpact,
+        levelImpact: levelImpact,
+        isAffected,
+        affectedByEvent,
+      };
+    });
+  }, [companyPointsBase, selectedSector, selectedTopic, calculatedImpacts, entityImpacts, getEntityImpact, snapshot]);
 
   // Helper to get RGB values from sector color (must come before dynamicImpactArcs)
   const getSectorRGB = (sector: string): string => {
@@ -1116,32 +1129,32 @@ export default function Globe3D({
           const isDynamic = d.type === 'dynamic';
           const isSnapshot = d.type === 'snapshot';
 
-          let baseStroke = 0.1;
+          let baseStroke = 0.5; // 🔧 INCREASED from 0.1 to 0.5 (5x thicker base)
 
           if (isEconomicFlow) {
             // Attention-score-like thickness based on magnitude
             const magnitude = d.amount || 0;
-            baseStroke = Math.min(0.1 + (magnitude / 100) * 1.4, 1.5);
+            baseStroke = Math.min(0.8 + (magnitude / 100) * 3.0, 4.0); // 🔧 INCREASED range: 0.8-4.0
 
-            // 🔥 THICKEN by 50% during active simulation
+            // 🔥 THICKEN by 3x during active simulation (was 1.5x)
             if (snapshot && snapshot.events.length > 0) {
-              baseStroke *= 1.5;
+              baseStroke *= 3.0; // 🔧 INCREASED from 1.5 to 3.0
             }
           } else if (isDynamic) {
-            baseStroke = Math.sqrt(d.amount) * 0.04;
+            baseStroke = Math.sqrt(d.amount) * 0.12; // 🔧 INCREASED from 0.04 to 0.12 (3x)
 
-            // 🔥 THICKEN during macro changes
+            // 🔥 THICKEN by 4x during macro changes (was 2x)
             if (Object.values(macroImpacts).some(v => v > 0.05)) {
-              baseStroke *= 2; // Double thickness when macro impact active
+              baseStroke *= 4.0; // 🔧 INCREASED from 2.0 to 4.0
             }
           } else if (isSnapshot) {
             // 💥 Snapshot event arcs are always thick and visible
-            baseStroke = Math.max(0.5, d.amount * 0.01);
+            baseStroke = Math.max(2.0, d.amount * 0.03); // 🔧 INCREASED from 0.5 to 2.0
           } else {
-            baseStroke = Math.sqrt(d.amount) * 0.02;
+            baseStroke = Math.sqrt(d.amount) * 0.08; // 🔧 INCREASED from 0.02 to 0.08 (4x)
           }
 
-          return Math.min(baseStroke, 2.5); // Cap at 2.5
+          return Math.min(baseStroke, 8.0); // 🔧 INCREASED cap from 2.5 to 8.0
         }}
         arcAltitude={(d: any) => {
           // Higher altitude for more important flows (self-attention style)

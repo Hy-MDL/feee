@@ -328,7 +328,7 @@ export default function SimulationPage() {
 
       <div className="flex h-[calc(100vh-80px)]">
         {/* Left Sidebar - Enhanced Controls */}
-        <div className="w-96 border-r border-border-primary bg-black/50 backdrop-blur p-6 overflow-y-auto">
+        <div className="w-72 border-r border-border-primary bg-black/50 backdrop-blur p-4 overflow-y-auto">
           {/* 🔍 Topic Filter Section */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
@@ -1028,7 +1028,7 @@ export default function SimulationPage() {
         </div>
 
         {/* Right Sidebar - BLOOMBERG TERMINAL STYLE */}
-        <div className="w-96 border-l border-accent-emerald/30 bg-black overflow-y-auto font-mono">
+        <div className="w-80 border-l border-accent-emerald/30 bg-black overflow-y-auto font-mono">
           <div className="p-4 space-y-4">
             {/* SIMULATION TIME - Bloomberg Style */}
             <div className="border-2 border-accent-emerald/50 bg-black p-4 rounded-lg">
@@ -1061,35 +1061,88 @@ export default function SimulationPage() {
               )}
             </div>
 
-            {/* HISTORICAL EVENTS - Terminal Style */}
+            {/* RECENT EVENTS - Show simulation events */}
             <div className="border border-accent-cyan/30 bg-black/80 rounded-lg overflow-hidden">
               <div className="bg-accent-cyan/10 px-3 py-2 border-b border-accent-cyan/30">
-                <span className="text-xs text-accent-cyan font-bold tracking-wider">HISTORICAL EVENTS</span>
+                <span className="text-xs text-accent-cyan font-bold tracking-wider">
+                  RECENT EVENTS ({currentSnapshot?.events.length || 0})
+                </span>
               </div>
-              <div className="p-3 space-y-2 max-h-96 overflow-y-auto">
-                {SCENARIOS.map(scenario => (
-                  <button
-                    key={scenario.id}
-                    onClick={() => applyScenario(scenario.id)}
-                    className={`w-full text-left p-3 rounded border transition-all ${
-                      activeScenario === scenario.id
-                        ? 'bg-accent-emerald/20 border-accent-emerald text-accent-emerald'
-                        : 'border-border-primary hover:border-accent-cyan/50 hover:bg-accent-cyan/5 text-text-secondary'
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="text-lg mt-0.5">{scenario.icon}</span>
-                      <div className="flex-1">
-                        <div className="text-xs font-bold mb-1">{scenario.name}</div>
-                        <div className="text-[10px] text-text-tertiary leading-tight">{scenario.description}</div>
-                        <div className="text-[10px] text-accent-cyan mt-1 font-mono">{scenario.date}</div>
+              <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                {currentSnapshot && currentSnapshot.events.length > 0 ? (
+                  currentSnapshot.events.map((event, idx) => {
+                    const impactColor = event.impact === 'positive' ? 'text-accent-emerald' :
+                                       event.impact === 'negative' ? 'text-red-400' : 'text-text-tertiary';
+                    const impactSign = event.impact === 'positive' ? '+' : event.impact === 'negative' ? '-' : '';
+
+                    return (
+                      <div key={idx} className="p-2 border border-border-primary/30 rounded bg-black/40">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="text-[10px] font-bold text-text-primary mb-0.5">
+                              {event.title}
+                            </div>
+                            {event.magnitude && (
+                              <div className={`text-xs font-mono font-bold ${impactColor}`}>
+                                {impactSign}{(event.magnitude * 100).toFixed(1)}% change
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      {activeScenario === scenario.id && (
-                        <div className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse mt-1" />
-                      )}
-                    </div>
-                  </button>
-                ))}
+                    );
+                  })
+                ) : (
+                  <div className="text-[10px] text-text-tertiary text-center py-4">
+                    No active events. Play simulation to see events.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* TOP PERFORMERS - Show entities with biggest changes */}
+            <div className="border border-accent-emerald/30 bg-black/80 rounded-lg overflow-hidden">
+              <div className="bg-accent-emerald/10 px-3 py-2 border-b border-accent-emerald/30">
+                <span className="text-xs text-accent-emerald font-bold tracking-wider">TOP PERFORMERS</span>
+              </div>
+              <div className="p-3 space-y-1.5 max-h-64 overflow-y-auto">
+                {currentSnapshot && currentSnapshot.entityValues.size > 0 ? (
+                  Array.from(currentSnapshot.entityValues.entries())
+                    .filter(([_, entity]) => entity.changePercent && Math.abs(entity.changePercent) > 0.01)
+                    .sort((a, b) => Math.abs(b[1].changePercent || 0) - Math.abs(a[1].changePercent || 0))
+                    .slice(0, 5)
+                    .map(([entityId, entity], idx) => {
+                      const isPositive = (entity.changePercent || 0) >= 0;
+                      const changeColor = isPositive ? 'text-accent-emerald' : 'text-red-400';
+
+                      // Extract entity name from ID
+                      const entityName = entity.name || entityId.replace(/^(company|component|product)-/, '').replace(/-/g, ' ').toUpperCase();
+                      const entityType = entityId.startsWith('company-') ? 'COMPANY' :
+                                        entityId.startsWith('component-') ? 'COMPONENT' : 'PRODUCT';
+
+                      return (
+                        <div key={entityId} className="p-2 border border-accent-emerald/20 rounded bg-black/40">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] font-bold text-text-primary truncate">
+                                {entityName}
+                              </div>
+                              <div className="text-[9px] text-text-tertiary">
+                                {entityType}
+                              </div>
+                            </div>
+                            <div className={`text-xs font-mono font-bold ${changeColor} flex-shrink-0`}>
+                              {isPositive ? '+' : ''}{((entity.changePercent || 0) * 100).toFixed(1)}%
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                ) : (
+                  <div className="text-[10px] text-text-tertiary text-center py-4">
+                    No data. Play simulation to see top performers.
+                  </div>
+                )}
               </div>
             </div>
 
