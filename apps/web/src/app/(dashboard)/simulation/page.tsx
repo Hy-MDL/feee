@@ -777,7 +777,7 @@ export default function SimulationPage() {
                   </div>
                 </div>
               )}
-              <Globe3D selectedSector={selectedSector} showControls={false} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
+              <Globe3D selectedSector={selectedSector} selectedTopic={selectedTopic} showControls={false} snapshot={currentSnapshot} economicFlows={currentEconomicFlows} />
             </div>
           )}
 
