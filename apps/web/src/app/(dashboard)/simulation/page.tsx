@@ -983,65 +983,121 @@ export default function SimulationPage() {
           )}
         </div>
 
-        {/* Right Sidebar - Element Library & Scenarios */}
-        <div className="w-80 border-l border-border-primary bg-black/50 backdrop-blur overflow-y-auto">
+        {/* Right Sidebar - BLOOMBERG TERMINAL STYLE */}
+        <div className="w-96 border-l border-accent-emerald/30 bg-black overflow-y-auto font-mono">
           <div className="p-4 space-y-4">
-            {/* Element Library */}
-            <div>
-              <button
-                onClick={() => setShowElementLibrary(!showElementLibrary)}
-                className="w-full flex items-center justify-between p-3 bg-background-secondary hover:bg-background-tertiary rounded-lg border border-border-primary transition-all"
-              >
-                <div className="flex items-center gap-2">
-                  <Settings size={16} className="text-accent-cyan" />
-                  <span className="text-sm font-semibold">Element Library</span>
+            {/* SIMULATION TIME - Bloomberg Style */}
+            <div className="border-2 border-accent-emerald/50 bg-black p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
+                <span className="text-xs text-accent-emerald/70 font-bold tracking-wider">SIMULATION TIME</span>
+              </div>
+              {currentSnapshot ? (
+                <div>
+                  <div className="text-4xl font-bold text-accent-emerald font-mono leading-none">
+                    {currentSnapshot.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                  <div className="text-2xl font-bold text-accent-emerald/80 font-mono">
+                    {currentSnapshot.date.getFullYear()}
+                  </div>
+                  <div className="text-xs text-accent-cyan mt-2">
+                    {currentSnapshot.events.length} events
+                  </div>
                 </div>
-                <span className="text-xs text-text-tertiary">{showElementLibrary ? '▼' : '▶'}</span>
-              </button>
-
-              {showElementLibrary && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs text-text-tertiary px-2">
-                    Drag & drop elements to create custom relationships (Coming Soon)
-                  </p>
-
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold text-text-secondary px-2 py-1">Relationship Types</div>
-                    <div className="space-y-1">
-                      {['Impact', 'Ownership', 'Supply Chain', 'Loan', 'Competition'].map(type => (
-                        <div
-                          key={type}
-                          className="px-3 py-2 bg-background-tertiary rounded border border-border-primary hover:border-accent-cyan transition-all cursor-move"
-                        >
-                          <span className="text-xs text-text-primary">{type}</span>
-                        </div>
-                      ))}
-                    </div>
+              ) : (
+                <div>
+                  <div className="text-4xl font-bold text-accent-emerald font-mono leading-none">
+                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
-
-                  <div className="space-y-1">
-                    <div className="text-xs font-semibold text-text-secondary px-2 py-1">Macro Variables</div>
-                    <div className="space-y-1">
-                      {['Interest Rate', 'GDP Growth', 'M2 Supply', 'Oil Price'].map(type => (
-                        <div
-                          key={type}
-                          className="px-3 py-2 bg-background-tertiary rounded border border-border-primary hover:border-accent-emerald transition-all cursor-move"
-                        >
-                          <span className="text-xs text-text-primary">{type}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="text-2xl font-bold text-accent-emerald/80 font-mono">
+                    {new Date().getFullYear()}
                   </div>
+                  <div className="text-xs text-text-tertiary mt-2">Real-time</div>
                 </div>
               )}
             </div>
 
-            {/* Scenario Management */}
-            <div>
-              <button
-                onClick={() => setShowScenarios(!showScenarios)}
-                className="w-full flex items-center justify-between p-3 bg-background-secondary hover:bg-background-tertiary rounded-lg border border-border-primary transition-all"
-              >
+            {/* HISTORICAL EVENTS - Terminal Style */}
+            <div className="border border-accent-cyan/30 bg-black/80 rounded-lg overflow-hidden">
+              <div className="bg-accent-cyan/10 px-3 py-2 border-b border-accent-cyan/30">
+                <span className="text-xs text-accent-cyan font-bold tracking-wider">HISTORICAL EVENTS</span>
+              </div>
+              <div className="p-3 space-y-2 max-h-96 overflow-y-auto">
+                {SCENARIOS.map(scenario => (
+                  <button
+                    key={scenario.id}
+                    onClick={() => applyScenario(scenario.id)}
+                    className={`w-full text-left p-3 rounded border transition-all ${
+                      activeScenario === scenario.id
+                        ? 'bg-accent-emerald/20 border-accent-emerald text-accent-emerald'
+                        : 'border-border-primary hover:border-accent-cyan/50 hover:bg-accent-cyan/5 text-text-secondary'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg mt-0.5">{scenario.icon}</span>
+                      <div className="flex-1">
+                        <div className="text-xs font-bold mb-1">{scenario.name}</div>
+                        <div className="text-[10px] text-text-tertiary leading-tight">{scenario.description}</div>
+                        <div className="text-[10px] text-accent-cyan mt-1 font-mono">{scenario.date}</div>
+                      </div>
+                      {activeScenario === scenario.id && (
+                        <div className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse mt-1" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CURRENT STATUS - Terminal Style */}
+            <div className="border border-accent-magenta/30 bg-black/80 rounded-lg overflow-hidden">
+              <div className="bg-accent-magenta/10 px-3 py-2 border-b border-accent-magenta/30">
+                <span className="text-xs text-accent-magenta font-bold tracking-wider">CURRENT STATUS</span>
+              </div>
+              <div className="p-3 space-y-2 text-xs">
+                <div className="flex justify-between items-center py-1 border-b border-border-primary/30">
+                  <span className="text-text-tertiary">SECTOR</span>
+                  <span className="text-accent-cyan font-semibold">
+                    {selectedSector ? sectors.find(s => s.id === selectedSector)?.label : 'ALL'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-border-primary/30">
+                  <span className="text-text-tertiary">FED RATE</span>
+                  <span className="text-accent-emerald font-mono font-bold">
+                    {(macroState['fed_funds_rate'] || 5.25).toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-border-primary/30">
+                  <span className="text-text-tertiary">VIEW</span>
+                  <span className="text-text-primary capitalize">{viewMode}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-text-tertiary">SCENARIO</span>
+                  <span className={activeScenario ? "text-accent-emerald font-semibold" : "text-text-tertiary"}>
+                    {activeScenario ? SCENARIOS.find(s => s.id === activeScenario)?.name.substring(0, 15) : 'BASELINE'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* SAVE/LOAD SCENARIOS - Compact Terminal Style */}
+            <div className="border border-accent-cyan/20 bg-black/60 rounded-lg overflow-hidden p-3">
+              <div className="text-[10px] text-accent-cyan/70 mb-2 tracking-wider">SCENARIO MGMT</div>
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => setShowSaveDialog(true)}
+                  className="w-full px-2 py-1.5 bg-accent-cyan/20 text-accent-cyan text-[10px] font-bold rounded border border-accent-cyan/50 hover:bg-accent-cyan/30 transition-all tracking-wider"
+                >
+                  💾 SAVE
+                </button>
+                <button
+                  onClick={() => setShowLoadDialog(true)}
+                  className="w-full px-2 py-1.5 bg-accent-magenta/20 text-accent-magenta text-[10px] font-bold rounded border border-accent-magenta/50 hover:bg-accent-magenta/30 transition-all tracking-wider"
+                >
+                  📂 LOAD ({getAllScenarios().length})
+                </button>
+              </div>
+            </div>
                 <div className="flex items-center gap-2">
                   <Users size={16} className="text-accent-magenta" />
                   <span className="text-sm font-semibold">Scenarios</span>

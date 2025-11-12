@@ -204,6 +204,7 @@ export default function Globe3D({
     const globalLiquidityMultiplier = 1 + ((macroState.global_m2_growth || 0) - 5) / 100;
     return COUNTRIES.map(country => ({
       ...country,
+      id: `country-${country.code}`, // 🔑 CRITICAL: Stable ID prevents country point re-rendering
       m2Supply: country.m2Supply * globalLiquidityMultiplier,
       size: Math.log(country.m2Supply * globalLiquidityMultiplier) * 0.3
     }));
@@ -311,6 +312,7 @@ export default function Globe3D({
         }
 
         return {
+          id: companyEntityId, // 🔑 CRITICAL: Stable ID prevents point re-rendering
           lat: company.location!.lat,
           lng: company.location!.lng,
           name: company.name_en || company.name,
@@ -963,12 +965,14 @@ export default function Globe3D({
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
 
+        // 🔑 Points with Stable IDs (prevents cylinder re-rendering/"popping")
         // UNIFIED VIEW: Show BOTH companies AND countries simultaneously
         // Filter by selectedSector if a topic is selected
         pointsData={[
           ...companyPoints,
           ...visibleCountries.map(c => ({ ...c, type: 'country' })) // Add type marker
         ]}
+        pointId="id" // CRITICAL: Use stable ID for point persistence
         pointLat="lat"
         pointLng="lng"
         pointAltitude={(d: any) => d.size * 0.01}
@@ -1022,22 +1026,77 @@ export default function Globe3D({
         arcStartLng="startLng"
         arcEndLat="endLat"
         arcEndLng="endLng"
-        arcColor={(d: any) => d.color}
+        arcColor={(d: any) => {
+          // 🔥 DYNAMIC REACTION: Arc color responds to simulation events
+          const isEconomicFlow = d.type === 'economic';
+          const isDynamicImpact = d.type === 'dynamic';
+          const isSnapshotArc = d.type === 'snapshot';
+
+          // Base color
+          let color = d.color;
+
+          // ✨ BRIGHTEN arcs during active events (simulation reaction)
+          if (snapshot && snapshot.events.length > 0 && (isEconomicFlow || isDynamicImpact)) {
+            // Parse RGBA to increase brightness
+            const rgbaMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+            if (rgbaMatch) {
+              const r = parseInt(rgbaMatch[1]);
+              const g = parseInt(rgbaMatch[2]);
+              const b = parseInt(rgbaMatch[3]);
+              let alpha = parseFloat(rgbaMatch[4] || '1');
+
+              // 🌟 Increase alpha by 50% during active simulation
+              alpha = Math.min(alpha * 1.5, 1);
+              color = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+          }
+
+          // 💥 GLOW effect for snapshot event arcs
+          if (isSnapshotArc && snapshot) {
+            const rgbaMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+            if (rgbaMatch) {
+              const r = parseInt(rgbaMatch[1]);
+              const g = parseInt(rgbaMatch[2]);
+              const b = parseInt(rgbaMatch[3]);
+              // Full brightness for active event arcs
+              color = `rgba(${r}, ${g}, ${b}, 0.95)`;
+            }
+          }
+
+          return color;
+        }}
         arcStroke={(d: any) => {
-          // Economic flows (from calculateEconomicFlows) have magnitude property
-          const isEconomicFlow = d.label && (d.label.includes('→') && d.label.includes('×'));
-          const isDynamic = d.label && d.label.includes('Impact');
+          // 🔥 DYNAMIC REACTION: Arc thickness responds to simulation
+          const isEconomicFlow = d.type === 'economic';
+          const isDynamic = d.type === 'dynamic';
+          const isSnapshot = d.type === 'snapshot';
+
+          let baseStroke = 0.1;
 
           if (isEconomicFlow) {
             // Attention-score-like thickness based on magnitude
-            // magnitude 0-200 → stroke 0.1-1.5
             const magnitude = d.amount || 0;
-            return Math.min(0.1 + (magnitude / 100) * 1.4, 1.5);
+            baseStroke = Math.min(0.1 + (magnitude / 100) * 1.4, 1.5);
+
+            // 🔥 THICKEN by 50% during active simulation
+            if (snapshot && snapshot.events.length > 0) {
+              baseStroke *= 1.5;
+            }
           } else if (isDynamic) {
-            return Math.sqrt(d.amount) * 0.04;
+            baseStroke = Math.sqrt(d.amount) * 0.04;
+
+            // 🔥 THICKEN during macro changes
+            if (Object.values(macroImpacts).some(v => v > 0.05)) {
+              baseStroke *= 2; // Double thickness when macro impact active
+            }
+          } else if (isSnapshot) {
+            // 💥 Snapshot event arcs are always thick and visible
+            baseStroke = Math.max(0.5, d.amount * 0.01);
           } else {
-            return Math.sqrt(d.amount) * 0.02;
+            baseStroke = Math.sqrt(d.amount) * 0.02;
           }
+
+          return Math.min(baseStroke, 2.5); // Cap at 2.5
         }}
         arcAltitude={(d: any) => {
           // Higher altitude for more important flows (self-attention style)
