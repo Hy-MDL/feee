@@ -601,16 +601,19 @@ export default function ForceNetworkGraph3D({
 
   useEffect(() => {
     if (fgRef.current) {
-      fgRef.current.d3Force('charge').strength(-300);
+      // 🔧 REDUCED from -300 to -100: Prevents "popping" and node explosion
+      fgRef.current.d3Force('charge').strength(-100);
       fgRef.current.d3Force('link').distance(100);
 
       // Add radial positioning force for better clustering
       fgRef.current.d3Force('radial', null);
 
-      // Add collision force to prevent overlapping
-      fgRef.current.d3Force('collision',
-        fgRef.current.d3Force('charge').strength(-50).radius(20)
-      );
+      // 🔧 FIXED: Use d3.forceCollide instead of modifying charge
+      // Prevents nodes from overlapping without causing explosion
+      const d3 = fgRef.current.d3;
+      if (d3 && d3.forceCollide) {
+        fgRef.current.d3Force('collision', d3.forceCollide().radius(20).strength(0.7));
+      }
 
       // Group nodes by level in concentric circles
       fgRef.current.d3Force('center-x', (node: any) => {

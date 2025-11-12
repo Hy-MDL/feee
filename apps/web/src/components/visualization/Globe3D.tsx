@@ -15,6 +15,11 @@ import { EconomicFlow } from '@/lib/utils/economicFlows';
 // Dynamic import to avoid SSR issues
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
+// 🔑 Arc ID Generator: Create stable IDs to prevent "popping" on re-render
+const generateArcId = (startLat: number, startLng: number, endLat: number, endLng: number, type: string = 'arc'): string => {
+  return `${type}-${startLat.toFixed(4)}-${startLng.toFixed(4)}-${endLat.toFixed(4)}-${endLng.toFixed(4)}`;
+};
+
 interface Country {
   lat: number;
   lng: number;
@@ -27,6 +32,7 @@ interface Country {
 }
 
 interface CapitalFlow {
+  id: string; // 🔑 CRITICAL: Unique ID for arc persistence (prevents "popping")
   startLat: number;
   startLng: number;
   endLat: number;
@@ -34,6 +40,7 @@ interface CapitalFlow {
   amount: number; // in billions USD
   color: string;
   label: string;
+  type?: 'static' | 'dynamic' | 'economic' | 'snapshot'; // Arc type for filtering
 }
 
 // Major economies with M2 money supply data
@@ -50,23 +57,26 @@ const COUNTRIES: Country[] = [
   { lat: 25.2048, lng: 55.2708, name: 'UAE', code: 'AE', m2Supply: 0.5, gdp: 0.5, color: '#39FF14', size: 0.5 },
 ];
 
-// Convert all flow data to CapitalFlow format
+// 🔥 STATIC FLOWS with Stable IDs (prevents "popping")
+// These arcs persist across re-renders because IDs are deterministic
 const COMPREHENSIVE_FLOWS: CapitalFlow[] = [
   // Original capital flows
-  { startLat: 37.7749, startLng: -122.4194, endLat: 39.9042, endLng: 116.4074, amount: 150, color: 'rgba(255, 215, 0, 0.6)', label: 'US → China Capital' },
-  { startLat: 37.7749, startLng: -122.4194, endLat: 35.6762, endLng: 139.6503, amount: 120, color: 'rgba(255, 215, 0, 0.6)', label: 'US → Japan Capital' },
-  { startLat: 37.7749, startLng: -122.4194, endLat: 51.5074, endLng: -0.1278, amount: 100, color: 'rgba(255, 215, 0, 0.6)', label: 'US → UK Capital' },
-  { startLat: 37.7749, startLng: -122.4194, endLat: 37.5665, endLng: 126.9780, amount: 80, color: 'rgba(255, 215, 0, 0.6)', label: 'US → Korea Capital' },
-  { startLat: 39.9042, startLng: 116.4074, endLat: 37.5665, endLng: 126.9780, amount: 90, color: 'rgba(239, 68, 68, 0.6)', label: 'China → Korea Capital' },
-  { startLat: 39.9042, startLng: 116.4074, endLat: 28.6139, endLng: 77.2090, amount: 70, color: 'rgba(239, 68, 68, 0.6)', label: 'China → India Capital' },
-  { startLat: 39.9042, startLng: 116.4074, endLat: 25.2048, endLng: 55.2708, amount: 50, color: 'rgba(239, 68, 68, 0.6)', label: 'China → UAE Capital' },
-  { startLat: 52.5200, startLng: 13.4050, endLat: 48.8566, endLng: 2.3522, amount: 60, color: 'rgba(0, 229, 255, 0.6)', label: 'Germany → France Capital' },
-  { startLat: 51.5074, startLng: -0.1278, endLat: 52.5200, endLng: 13.4050, amount: 55, color: 'rgba(139, 92, 246, 0.6)', label: 'UK → Germany Capital' },
-  { startLat: 35.6762, startLng: 139.6503, endLat: 37.7749, endLng: -122.4194, amount: 100, color: 'rgba(255, 107, 107, 0.6)', label: 'Japan → US Capital' },
-  { startLat: 37.5665, startLng: 126.9780, endLat: 39.9042, endLng: 116.4074, amount: 65, color: 'rgba(0, 229, 255, 0.6)', label: 'Korea → China Capital' },
+  { id: generateArcId(37.7749, -122.4194, 39.9042, 116.4074, 'capital'), type: 'static', startLat: 37.7749, startLng: -122.4194, endLat: 39.9042, endLng: 116.4074, amount: 150, color: 'rgba(255, 215, 0, 0.6)', label: 'US → China Capital' },
+  { id: generateArcId(37.7749, -122.4194, 35.6762, 139.6503, 'capital'), type: 'static', startLat: 37.7749, startLng: -122.4194, endLat: 35.6762, endLng: 139.6503, amount: 120, color: 'rgba(255, 215, 0, 0.6)', label: 'US → Japan Capital' },
+  { id: generateArcId(37.7749, -122.4194, 51.5074, -0.1278, 'capital'), type: 'static', startLat: 37.7749, startLng: -122.4194, endLat: 51.5074, endLng: -0.1278, amount: 100, color: 'rgba(255, 215, 0, 0.6)', label: 'US → UK Capital' },
+  { id: generateArcId(37.7749, -122.4194, 37.5665, 126.9780, 'capital'), type: 'static', startLat: 37.7749, startLng: -122.4194, endLat: 37.5665, endLng: 126.9780, amount: 80, color: 'rgba(255, 215, 0, 0.6)', label: 'US → Korea Capital' },
+  { id: generateArcId(39.9042, 116.4074, 37.5665, 126.9780, 'capital'), type: 'static', startLat: 39.9042, startLng: 116.4074, endLat: 37.5665, endLng: 126.9780, amount: 90, color: 'rgba(239, 68, 68, 0.6)', label: 'China → Korea Capital' },
+  { id: generateArcId(39.9042, 116.4074, 28.6139, 77.2090, 'capital'), type: 'static', startLat: 39.9042, startLng: 116.4074, endLat: 28.6139, endLng: 77.2090, amount: 70, color: 'rgba(239, 68, 68, 0.6)', label: 'China → India Capital' },
+  { id: generateArcId(39.9042, 116.4074, 25.2048, 55.2708, 'capital'), type: 'static', startLat: 39.9042, startLng: 116.4074, endLat: 25.2048, endLng: 55.2708, amount: 50, color: 'rgba(239, 68, 68, 0.6)', label: 'China → UAE Capital' },
+  { id: generateArcId(52.5200, 13.4050, 48.8566, 2.3522, 'capital'), type: 'static', startLat: 52.5200, startLng: 13.4050, endLat: 48.8566, endLng: 2.3522, amount: 60, color: 'rgba(0, 229, 255, 0.6)', label: 'Germany → France Capital' },
+  { id: generateArcId(51.5074, -0.1278, 52.5200, 13.4050, 'capital'), type: 'static', startLat: 51.5074, startLng: -0.1278, endLat: 52.5200, endLng: 13.4050, amount: 55, color: 'rgba(139, 92, 246, 0.6)', label: 'UK → Germany Capital' },
+  { id: generateArcId(35.6762, 139.6503, 37.7749, -122.4194, 'capital'), type: 'static', startLat: 35.6762, startLng: 139.6503, endLat: 37.7749, endLng: -122.4194, amount: 100, color: 'rgba(255, 107, 107, 0.6)', label: 'Japan → US Capital' },
+  { id: generateArcId(37.5665, 126.9780, 39.9042, 116.4074, 'capital'), type: 'static', startLat: 37.5665, startLng: 126.9780, endLat: 39.9042, endLng: 116.4074, amount: 65, color: 'rgba(0, 229, 255, 0.6)', label: 'Korea → China Capital' },
 
   // Add Trade Flows (from globalSupplyChain.ts)
   ...TRADE_FLOWS.map(flow => ({
+    id: generateArcId(flow.startLat, flow.startLng, flow.endLat, flow.endLng, 'trade'),
+    type: 'static' as const,
     startLat: flow.startLat,
     startLng: flow.startLng,
     endLat: flow.endLat,
@@ -78,6 +88,8 @@ const COMPREHENSIVE_FLOWS: CapitalFlow[] = [
 
   // Add Shipping Routes
   ...SHIPPING_ROUTES.map(route => ({
+    id: generateArcId(route.startLat, route.startLng, route.endLat, route.endLng, 'shipping'),
+    type: 'static' as const,
     startLat: route.startLat,
     startLng: route.startLng,
     endLat: route.endLat,
@@ -90,6 +102,8 @@ const COMPREHENSIVE_FLOWS: CapitalFlow[] = [
   // Add Supply Chain Paths (convert multi-node paths to individual arcs)
   ...SUPPLY_CHAIN_PATHS.flatMap(path =>
     path.nodes.slice(0, -1).map((node, i) => ({
+      id: generateArcId(node.lat, node.lng, path.nodes[i + 1].lat, path.nodes[i + 1].lng, 'supply-chain'),
+      type: 'static' as const,
       startLat: node.lat,
       startLng: node.lng,
       endLat: path.nodes[i + 1].lat,
@@ -102,6 +116,8 @@ const COMPREHENSIVE_FLOWS: CapitalFlow[] = [
 
   // Add Currency Flows
   ...CURRENCY_FLOWS.map(flow => ({
+    id: generateArcId(flow.startLat, flow.startLng, flow.endLat, flow.endLng, 'currency'),
+    type: 'static' as const,
     startLat: flow.startLat,
     startLng: flow.startLng,
     endLat: flow.endLat,
@@ -360,6 +376,8 @@ export default function Globe3D({
                   : 'rgba(148, 163, 184, 0.4)'; // gray
 
                 arcs.push({
+                  id: generateArcId(sourceLocation.lat, sourceLocation.lng, targetLocation.lat, targetLocation.lng, `snapshot-${event.title.replace(/\s+/g, '-')}`),
+                  type: 'snapshot',
                   startLat: sourceLocation.lat,
                   startLng: sourceLocation.lng,
                   endLat: targetLocation.lat,
@@ -410,6 +428,8 @@ export default function Globe3D({
             const alpha = brightness * 0.8; // Max 0.8 opacity
 
             arcs.push({
+              id: generateArcId(company1.lat, company1.lng, company2.lat, company2.lng, `dynamic-${sector}`),
+              type: 'dynamic',
               startLat: company1.lat,
               startLng: company1.lng,
               endLat: company2.lat,
@@ -493,6 +513,8 @@ export default function Globe3D({
           : `rgba(100, 116, 139, ${Math.min(flow.magnitude / 100, 0.7)})`; // Gray
 
         arcs.push({
+          id: generateArcId(fromLoc.lat, fromLoc.lng, toLoc.lat, toLoc.lng, `economic-${flow.from.replace(/\s+/g, '-')}-${flow.to.replace(/\s+/g, '-')}`),
+          type: 'economic',
           startLat: fromLoc.lat,
           startLng: fromLoc.lng,
           endLat: toLoc.lat,
@@ -993,8 +1015,9 @@ export default function Globe3D({
           }
         }}
 
-        // Arcs (Capital Flows + Dynamic Macro Impacts + Economic Flows)
+        // 🔑 Arcs with Stable IDs (prevents "popping" during re-render)
         arcsData={allArcs}
+        arcId="id" // CRITICAL: Use stable ID for arc persistence
         arcStartLat="startLat"
         arcStartLng="startLng"
         arcEndLat="endLat"
