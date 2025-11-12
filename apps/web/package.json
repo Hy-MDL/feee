@@ -30,6 +30,7 @@
     "react-force-graph-3d": "^1.29.0",
     "react-globe.gl": "^2.37.0",
     "react-markdown": "^9.0.1",
+    "reactflow": "^11.11.4",
     "recharts": "^2.13.3",
     "swr": "^2.2.5",
     "tailwind-merge": "^2.6.0",

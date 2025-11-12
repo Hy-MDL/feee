@@ -1030,9 +1030,83 @@ export default function SimulationPage() {
           )}
         </div>
 
-        {/* Right Sidebar - Scenarios */}
+        {/* Right Sidebar - Stats + Scenarios */}
         <div className="w-80 border-l border-border-primary bg-black/50 backdrop-blur overflow-y-auto">
           <div className="p-4 space-y-4">
+            {/* Stats Panel */}
+            <div className="bg-gradient-to-br from-accent-cyan/10 to-accent-magenta/10 border border-accent-cyan/30 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity size={16} className="text-accent-cyan" />
+                <h3 className="text-sm font-semibold text-text-primary">Quick Stats</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-tertiary">Simulation Time:</span>
+                  <span className="text-xs font-mono font-bold text-accent-emerald">
+                    {currentSnapshot
+                      ? currentSnapshot.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : selectedDate}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-tertiary">Active Events:</span>
+                  <span className="text-xs font-bold text-accent-cyan">
+                    {currentSnapshot?.events.length || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-tertiary">Top Performer:</span>
+                  <span className="text-xs font-bold text-status-safe">
+                    {sectors.reduce((max, s) => (s.impact > max.impact ? s : max), sectors[0]).label}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Activity Feed */}
+            <div className="bg-background-secondary border border-border-primary rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap size={14} className="text-accent-magenta" />
+                <h3 className="text-xs font-semibold text-text-primary">Recent Activity</h3>
+              </div>
+              <div className="space-y-2 text-xs">
+                {macroChanging && changedMacroId && (
+                  <div className="flex items-start gap-2 p-2 bg-accent-cyan/10 rounded animate-pulse">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan mt-1" />
+                    <div>
+                      <span className="text-accent-cyan font-semibold">
+                        {macroControls.find(c => c.id === changedMacroId)?.label}
+                      </span>
+                      <span className="text-text-tertiary"> changed to </span>
+                      <span className="text-accent-emerald font-mono">
+                        {macroControls.find(c => c.id === changedMacroId)?.value.toFixed(2)}
+                        {macroControls.find(c => c.id === changedMacroId)?.unit}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {sectors.filter(s => Math.abs(s.impact) > 1).slice(0, 3).map((sector, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-text-tertiary">
+                    <div className={`w-1.5 h-1.5 rounded-full mt-1 ${
+                      sector.impact >= 0 ? 'bg-status-safe' : 'bg-status-danger'
+                    }`} />
+                    <div>
+                      <span className="text-text-primary font-semibold">{sector.label}</span>
+                      <span> impact: </span>
+                      <span className={sector.impact >= 0 ? 'text-status-safe' : 'text-status-danger'}>
+                        {sector.impact >= 0 ? '+' : ''}{sector.impact.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {!macroChanging && sectors.every(s => Math.abs(s.impact) <= 1) && (
+                  <div className="text-text-tertiary text-center py-2 italic">
+                    Adjust macro variables to see activity
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Scenario Management */}
             <div>
               <button
